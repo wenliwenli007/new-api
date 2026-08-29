@@ -48,6 +48,16 @@ const NEW_API_FOOTER_ATTRIBUTION_KEY = [
   'projectAttributionSuffix',
 ].join('.')
 
+// Platform pages hosted on the same domain but served as static files outside
+// the SPA router. They must stay plain <a target='_blank'> anchors — passing
+// these relative hrefs through FooterLinkItem would render router <Link>s and
+// break navigation to the static files.
+const PLATFORM_LINKS: FooterLink[] = [
+  { text: 'footer.platformLinks.contributor', href: '/contributor.html' },
+  { text: 'footer.platformLinks.market', href: '/market.html' },
+  { text: 'footer.platformLinks.health', href: '/health.json' },
+]
+
 function FooterLinkItem(props: { link: FooterLink }) {
   const { t } = useTranslation()
   const isExternal = props.link.href.startsWith('http')
@@ -267,6 +277,19 @@ export function Footer(props: FooterProps) {
             <p className='text-muted-foreground/60 mt-3 max-w-[200px] text-xs leading-relaxed'>
               {t('Powerful API Management Platform')}
             </p>
+            <div className='mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5'>
+              {PLATFORM_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='text-muted-foreground hover:text-foreground text-sm transition-colors duration-200'
+                >
+                  {t(link.text)}
+                </a>
+              ))}
+            </div>
           </div>
 
           {/* Links columns */}
