@@ -18,12 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { describe, expect, test } from 'vitest'
 
-import { FALLBACK_CNY_PER_UNIT } from '../constants'
-import {
-  cnyToTopupUnits,
-  formatCnyAmount,
-  topupUnitsToCny,
-} from './format'
+import { formatCnyAmount } from './format'
 
 describe('formatCnyAmount (deterministic RMB display)', () => {
   test('always prefixes ¥ regardless of any runtime configuration', () => {
@@ -42,25 +37,5 @@ describe('formatCnyAmount (deterministic RMB display)', () => {
   test('renders a dash for non-finite input', () => {
     expect(formatCnyAmount(Number.NaN)).toBe('-')
     expect(formatCnyAmount('not-a-number')).toBe('-')
-  })
-})
-
-describe('CNY ↔ topup unit conversion (backend integer-unit contract)', () => {
-  test('CNY below one unit snaps to 0 units (minimum hint case)', () => {
-    // The reported bug: typing ¥1 must not look like a payable order.
-    expect(cnyToTopupUnits(1, FALLBACK_CNY_PER_UNIT)).toBe(0)
-    expect(cnyToTopupUnits(3.59, FALLBACK_CNY_PER_UNIT)).toBe(0)
-  })
-
-  test('CNY ≥ the unit price maps to at least 1 unit', () => {
-    expect(cnyToTopupUnits(7.2, FALLBACK_CNY_PER_UNIT)).toBe(1)
-    expect(cnyToTopupUnits(10, FALLBACK_CNY_PER_UNIT)).toBe(1)
-    expect(cnyToTopupUnits(72, FALLBACK_CNY_PER_UNIT)).toBe(10)
-  })
-
-  test('units convert back to the exact CNY charge (units × price)', () => {
-    expect(topupUnitsToCny(1, FALLBACK_CNY_PER_UNIT)).toBe(7.2)
-    expect(topupUnitsToCny(10, FALLBACK_CNY_PER_UNIT)).toBe(72)
-    expect(topupUnitsToCny(0, FALLBACK_CNY_PER_UNIT)).toBe(0)
   })
 })

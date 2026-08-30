@@ -124,13 +124,16 @@ func GetTopUpInfo(c *gin.Context) {
 	common.ApiSuccess(c, data)
 }
 
+// EpayRequest / AmountRequest 的 Amount 语义（C2C 人民币原生）：
+// 人民币元，支持两位小数（10 即 ¥10）。应付金额 = Amount（1:1，ZPAY 为人民币通道），
+// 入账 quota = round(Amount ÷ Price × QuotaPerUnit)。
 type EpayRequest struct {
-	Amount        int64  `json:"amount"`
-	PaymentMethod string `json:"payment_method"`
+	Amount        float64 `json:"amount"`
+	PaymentMethod string  `json:"payment_method"`
 }
 
 type AmountRequest struct {
-	Amount int64 `json:"amount"`
+	Amount float64 `json:"amount"`
 }
 
 func GetEpayClient() *epay.Client {
@@ -147,14 +150,10 @@ func GetEpayClient() *epay.Client {
 	return withUrl
 }
 
-func getPayMoney(amount int64, group string) float64 {
-	dAmount := decimal.NewFromInt(amount)
-	// 充值金额以“展示类型”为准：
-	// - USD/CNY: 前端传 amount 为金额单位；TOKENS: 前端传 tokens，需要换成 USD 金额
-	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
-		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-		dAmount = dAmount.Div(dQuotaPerUnit)
-	}
+func getPayMoney(amount float64, group string) float64 {
+	// C2C：amount 即人民币元，ZPAY 为人民币通道，应付金额与充值金额 1:1；
+	// 仅在管理员配置了充值分组倍率 / 档位折扣时按配置调整（默认均为 1，即严格 1:1）。
+	dAmount := decimal.NewFromFloat(amount)
 
 	topupGroupRatio := common.GetTopupGroupRatio(group)
 	if topupGroupRatio == 0 {
@@ -162,7 +161,6 @@ func getPayMoney(amount int64, group string) float64 {
 	}
 
 	dTopupGroupRatio := decimal.NewFromFloat(topupGroupRatio)
-	dPrice := decimal.NewFromFloat(operation_setting.Price)
 	// apply optional preset discount by the original request amount (if configured), default 1.0
 	discount := 1.0
 	if ds, ok := operation_setting.GetPaymentSetting().AmountDiscount[int(amount)]; ok {
@@ -172,23 +170,15 @@ func getPayMoney(amount int64, group string) float64 {
 	}
 	dDiscount := decimal.NewFromFloat(discount)
 
-	payMoney := dAmount.Mul(dPrice).Mul(dTopupGroupRatio).Mul(dDiscount)
+	payMoney := dAmount.Mul(dTopupGroupRatio).Mul(dDiscount)
 
 	return payMoney.InexactFloat64()
 }
 
-func getMinTopup() int64 {
-	minTopup := operation_setting.MinTopUp
-	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
-		dMinTopup := decimal.NewFromInt(int64(minTopup))
-		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-		quota, err := common.WalletQuotaFromDecimalStrict(dMinTopup.Mul(dQuotaPerUnit))
-		if err != nil {
-			return common.MaxWalletQuota
-		}
-		minTopup = quota
-	}
-	return int64(minTopup)
+// getMinTopup 返回起充金额（人民币元）。MinTopUp option 的语义已随
+// 充值金额人民币化改为元（如 10 = ¥10 起充）。
+func getMinTopup() float64 {
+	return float64(operation_setting.MinTopUp)
 }
 
 func getTopUpQuota(amount int64) (int, error) {
@@ -267,6 +257,60 @@ func rejectInvalidTopUpQuota(c *gin.Context, userId int, amount int64) bool {
 	return false
 }
 
+// getCnyTopUpQuota 计算人民币元充值对应的入账 quota：
+// round(amount ÷ Price × QuotaPerUnit)。Price（¥/单位，当前 7.2）与
+// QuotaPerUnit 均为运行时 option 读取，不硬编码。
+// WalletQuotaFromDecimalStrict 内部做 half-away-from-zero 取整并在超出
+// MaxWalletQuota 时报错，正好提供 round 与上限语义。
+func getCnyTopUpQuota(amount float64) (int, error) {
+	dPrice := decimal.NewFromFloat(operation_setting.Price)
+	if dPrice.IsZero() {
+		return 0, errors.New("充值汇率未配置")
+	}
+	quota := decimal.NewFromFloat(amount).
+		Div(dPrice).
+		Mul(decimal.NewFromFloat(common.QuotaPerUnit))
+	return common.WalletQuotaFromDecimalStrict(quota)
+}
+
+// getMaxTopUpAmountCny 返回单笔充值金额上限（人民币元），即恰好入账
+// MaxWalletQuota 的金额；超出该值的金额无法安全入账。
+func getMaxTopUpAmountCny() float64 {
+	if common.QuotaPerUnit <= 0 {
+		return 0
+	}
+	return decimal.NewFromInt(common.MaxWalletQuota).
+		Mul(decimal.NewFromFloat(operation_setting.Price)).
+		Div(decimal.NewFromFloat(common.QuotaPerUnit)).
+		InexactFloat64()
+}
+
+func validateCnyTopUpQuota(amount float64) (int, error) {
+	quota, err := getCnyTopUpQuota(amount)
+	if err == nil && quota > 0 {
+		return quota, nil
+	}
+	maxAmount := getMaxTopUpAmountCny()
+	if maxAmount > 0 && amount > maxAmount {
+		return 0, fmt.Errorf("单笔充值金额不能大于 %.2f", maxAmount)
+	}
+	return 0, errors.New("充值金额无效")
+}
+
+// rejectInvalidCnyTopUpQuota 校验人民币元充值金额并返回可入账 quota。
+// 返回 (creditedQuota, rejected)：rejected=true 时响应已写出。
+func rejectInvalidCnyTopUpQuota(c *gin.Context, userId int, amount float64) (int, bool) {
+	creditedQuota, err := validateCnyTopUpQuota(amount)
+	if err == nil {
+		err = model.ValidateTopUpQuotaCapacity(userId, creditedQuota)
+	}
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": err.Error()})
+		return 0, true
+	}
+	return creditedQuota, false
+}
+
 func RequestEpay(c *gin.Context) {
 	var req EpayRequest
 	err := c.ShouldBindJSON(&req)
@@ -274,12 +318,17 @@ func RequestEpay(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
 		return
 	}
+	if req.Amount <= 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额必须大于 0"})
+		return
+	}
 	if req.Amount < getMinTopup() {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getMinTopup())})
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值金额不能小于 %.0f", getMinTopup())})
 		return
 	}
 	id := c.GetInt("id")
-	if rejectInvalidTopUpQuota(c, id, req.Amount) {
+	creditedQuota, rejected := rejectInvalidCnyTopUpQuota(c, id, req.Amount)
+	if rejected {
 		return
 	}
 
@@ -312,26 +361,22 @@ func RequestEpay(c *gin.Context) {
 	uri, params, err := client.Purchase(&epay.PurchaseArgs{
 		Type:           req.PaymentMethod,
 		ServiceTradeNo: tradeNo,
-		Name:           fmt.Sprintf("TUC%d", req.Amount),
+		Name:           fmt.Sprintf("TUC%v", req.Amount),
 		Money:          strconv.FormatFloat(payMoney, 'f', 2, 64),
 		Device:         epay.PC,
 		NotifyUrl:      notifyUrl,
 		ReturnUrl:      returnUrl,
 	})
 	if err != nil {
-		logger.LogError(c.Request.Context(), fmt.Sprintf("易支付 拉起支付失败 user_id=%d trade_no=%s payment_method=%s amount=%d error=%q", id, tradeNo, req.PaymentMethod, req.Amount, err.Error()))
+		logger.LogError(c.Request.Context(), fmt.Sprintf("易支付 拉起支付失败 user_id=%d trade_no=%s payment_method=%s amount=%v error=%q", id, tradeNo, req.PaymentMethod, req.Amount, err.Error()))
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起支付失败"})
 		return
 	}
-	amount := req.Amount
-	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
-		dAmount := decimal.NewFromInt(int64(amount))
-		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-		amount = dAmount.Div(dQuotaPerUnit).IntPart()
-	}
 	topUp := &model.TopUp{
-		UserId:          id,
-		Amount:          amount,
+		UserId: id,
+		// C2C 人民币原生：Amount 存下单时算好的入账 quota
+		// （round(人民币元 ÷ Price × QuotaPerUnit)），回调/补单直接按该值入账。
+		Amount:          int64(creditedQuota),
 		Money:           payMoney,
 		TradeNo:         tradeNo,
 		PaymentMethod:   req.PaymentMethod,
@@ -341,11 +386,11 @@ func RequestEpay(c *gin.Context) {
 	}
 	err = topUp.Insert()
 	if err != nil {
-		logger.LogError(c.Request.Context(), fmt.Sprintf("易支付 创建充值订单失败 user_id=%d trade_no=%s payment_method=%s amount=%d error=%q", id, tradeNo, req.PaymentMethod, req.Amount, err.Error()))
+		logger.LogError(c.Request.Context(), fmt.Sprintf("易支付 创建充值订单失败 user_id=%d trade_no=%s payment_method=%s amount=%v error=%q", id, tradeNo, req.PaymentMethod, req.Amount, err.Error()))
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "创建订单失败"})
 		return
 	}
-	logger.LogInfo(c.Request.Context(), fmt.Sprintf("易支付 充值订单创建成功 user_id=%d trade_no=%s payment_method=%s amount=%d money=%.2f uri=%q params=%q", id, tradeNo, req.PaymentMethod, req.Amount, payMoney, uri, common.GetJsonString(params)))
+	logger.LogInfo(c.Request.Context(), fmt.Sprintf("易支付 充值订单创建成功 user_id=%d trade_no=%s payment_method=%s amount=%v money=%.2f quota=%d uri=%q params=%q", id, tradeNo, req.PaymentMethod, req.Amount, payMoney, creditedQuota, uri, common.GetJsonString(params)))
 	c.JSON(http.StatusOK, gin.H{"message": "success", "data": params, "url": uri})
 }
 
@@ -491,12 +536,16 @@ func RequestAmount(c *gin.Context) {
 		return
 	}
 
+	if req.Amount <= 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额必须大于 0"})
+		return
+	}
 	if req.Amount < getMinTopup() {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getMinTopup())})
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值金额不能小于 %.0f", getMinTopup())})
 		return
 	}
 	id := c.GetInt("id")
-	if rejectInvalidTopUpQuota(c, id, req.Amount) {
+	if _, rejected := rejectInvalidCnyTopUpQuota(c, id, req.Amount); rejected {
 		return
 	}
 	group, err := model.GetUserGroup(id, true)

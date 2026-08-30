@@ -204,9 +204,11 @@ func RechargeEpay(tradeNo string, actualPaymentMethod string, callerIp string) (
 			topUp.PaymentMethod = actualPaymentMethod
 		}
 		var quotaErr error
-		quotaToAdd, quotaErr = common.WalletQuotaFromDecimalStrict(
-			decimal.NewFromInt(topUp.Amount).Mul(decimal.NewFromFloat(common.QuotaPerUnit)),
-		)
+		// epay(ZPAY) 订单（C2C 人民币原生改造后）：下单时已按
+		// round(人民币元 ÷ Price × QuotaPerUnit) 把入账 quota 写入 Amount
+		// （见 controller.RequestEpay），回调时直接按 Amount 入账，
+		// 不再乘 QuotaPerUnit，也不受回调时点 Price 变化影响。
+		quotaToAdd, quotaErr = common.WalletQuotaFromDecimalStrict(decimal.NewFromInt(topUp.Amount))
 		if quotaErr != nil || quotaToAdd <= 0 {
 			return ErrInvalidTopUpQuota
 		}
@@ -478,18 +480,23 @@ func ManualCompleteTopUp(tradeNo string, callerIp string) error {
 			return errors.New("订单状态不是待支付，无法补单")
 		}
 
-		// 计算应充值额度：
+		// 计算应充值额度（与各通道回调的入账口径保持一致）：
 		// - Stripe 订单：Money 代表经分组倍率换算后的美元数量，直接 * QuotaPerUnit
-		// - 其他订单（如易支付）：Amount 为美元数量，* QuotaPerUnit
+		// - Waffo / Waffo Pancake 订单：Amount 为美元数量，* QuotaPerUnit
+		// - epay(ZPAY) 订单：C2C 人民币原生改造后，Amount 存的是下单时算好的
+		//   入账 quota（round(人民币元 ÷ Price × QuotaPerUnit)），直接入账
+		// - Creem 订单：Amount 本就存 quota，直接入账
 		var quotaErr error
 		if topUp.PaymentProvider == PaymentProviderStripe {
 			quotaToAdd, quotaErr = common.WalletQuotaFromDecimalStrict(
 				decimal.NewFromFloat(topUp.Money).Mul(decimal.NewFromFloat(common.QuotaPerUnit)),
 			)
-		} else {
+		} else if topUp.PaymentProvider == PaymentProviderWaffo || topUp.PaymentProvider == PaymentProviderWaffoPancake {
 			quotaToAdd, quotaErr = common.WalletQuotaFromDecimalStrict(
 				decimal.NewFromInt(topUp.Amount).Mul(decimal.NewFromFloat(common.QuotaPerUnit)),
 			)
+		} else {
+			quotaToAdd, quotaErr = common.WalletQuotaFromDecimalStrict(decimal.NewFromInt(topUp.Amount))
 		}
 		if quotaErr != nil || quotaToAdd <= 0 {
 			return ErrInvalidTopUpQuota

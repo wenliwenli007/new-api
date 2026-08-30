@@ -70,10 +70,9 @@ export function formatCurrency(amount: number | string): string {
  * (quota_display_type / custom_currency_symbol delivered by /api/status and
  * cached in the zustand store + localStorage) can be missing, stale or
  * non-CNY — in which case amounts silently degraded to "$", "¤" or a bare
- * number. The deterministic fallback for this RMB-only site is ¥ at the
- * fixed rate FALLBACK_CNY_PER_UNIT (¥7.2 per topup unit, constants.ts);
- * the rate itself is applied by callers (index.tsx), this function only
- * renders the ¥ figure.
+ * number. Topup amounts are CNY-native end to end (backend `amount` IS yuan,
+ * 1:1); FALLBACK_CNY_PER_UNIT (constants.ts) now only powers the "estimated
+ * credit in USD" hint, this function just renders the ¥ figure.
  */
 export function formatCnyAmount(amount: number | string): string {
   const numeric =
@@ -89,56 +88,8 @@ export function formatCnyAmount(amount: number | string): string {
 }
 
 // ============================================================================
-// C2C Topup Unit Conversion (RMB-first display semantics)
+// C2C Topup (CNY-native semantics)
 // ============================================================================
-
-/**
- * Convert a CNY (¥) figure typed by the user into the integer "topup unit"
- * amount the backend expects.
- *
- * Backend contract (controller/topup.go, DO NOT change lightly):
- * - `/api/user/amount` and `/api/user/pay` take `amount` as an int64 number
- *   of USD quota units (1 unit = 500000 quota = $1). Fractional values are
- *   rejected by JSON binding, so the result MUST be an integer.
- * - The user is charged `amount × Price` in CNY (operation_setting.Price,
- *   7.2 in this deployment — same value as custom_currency_exchange_rate).
- *
- * Because only integer units are accepted, a CNY input is snapped to the
- * NEAREST unit; the exact charge (units × Price) is always shown live via
- * /api/user/amount and in the payment confirm dialog before the user pays.
- *
- * Example: user types ¥10 → Math.round(10 / 7.2) = 1 unit → charged ¥7.2.
- * If the pricing semantics ever change, this file and FALLBACK_CNY_PER_UNIT
- * (constants.ts) are the only places to touch.
- */
-export function cnyToTopupUnits(cny: number, cnyPerUnit: number): number {
-  if (
-    !Number.isFinite(cny) ||
-    cny <= 0 ||
-    !Number.isFinite(cnyPerUnit) ||
-    cnyPerUnit <= 0
-  ) {
-    return 0
-  }
-  return Math.round(cny / cnyPerUnit)
-}
-
-/**
- * Inverse of {@link cnyToTopupUnits}: convert topup units (USD) back to the
- * CNY figure shown in the custom amount input (units × price-per-unit).
- * Rounded to fen (2 decimals) to hide binary float noise (10 / 7.2 * 7.2).
- */
-export function topupUnitsToCny(units: number, cnyPerUnit: number): number {
-  if (
-    !Number.isFinite(units) ||
-    units <= 0 ||
-    !Number.isFinite(cnyPerUnit) ||
-    cnyPerUnit <= 0
-  ) {
-    return 0
-  }
-  return Math.round(units * cnyPerUnit * 100) / 100
-}
 
 /**
  * Get discount label for display (e.g., "20% OFF")
@@ -152,19 +103,20 @@ export function getDiscountLabel(discount: number): string {
 }
 
 /**
- * Calculate pricing details for a preset amount
+ * Calculate pricing details for a preset amount (CNY-native).
+ *
+ * The preset value IS the CNY (¥) price the user pays (1:1 — the backend
+ * charges `amount` yuan directly for the ZPAY channel); an optional
+ * per-amount discount configured by the admin reduces what the user pays.
+ * Figures are rounded to fen (2 decimals) to hide binary float noise
+ * (e.g. 50 × 0.9).
  */
-export function calculatePresetPricing(
-  presetValue: number,
-  priceRatio: number,
-  discount: number,
-  usdExchangeRate: number = 1
-) {
-  const originalPrice = presetValue * priceRatio
-  const actualPrice = originalPrice * discount
-  const savedAmount = originalPrice - actualPrice
+export function calculatePresetPricing(presetValue: number, discount: number) {
+  const displayValue = presetValue
+  const originalPrice = presetValue
+  const actualPrice = Math.round(presetValue * discount * 100) / 100
+  const savedAmount = Math.round((originalPrice - actualPrice) * 100) / 100
   const hasDiscount = discount < 1.0
-  const displayValue = presetValue * usdExchangeRate
 
   return {
     displayValue,
