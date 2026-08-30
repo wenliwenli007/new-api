@@ -124,6 +124,52 @@ func SearchRedemptions(keyword string, status string, startIdx int, num int) (re
 	return redemptions, total, nil
 }
 
+// GetRedemptionKeysForExport 返回用于 TXT 导出的兑换码 key 列表（一行一个码）。
+// status 语义与 SearchRedemptions 一致：空串/1 = 未使用（启用且未过期），
+// "expired" = 已过期，2 = 禁用，3 = 已使用。导出与售卖相关，key 按 id 升序输出。
+func GetRedemptionKeysForExport(status string) ([]string, error) {
+	query := DB.Model(&Redemption{})
+
+	if status != "" {
+		now := common.GetTimestamp()
+		switch status {
+		case "expired":
+			query = query.Where(
+				"status = ? AND expired_time != 0 AND expired_time < ?",
+				common.RedemptionCodeStatusEnabled,
+				now,
+			)
+		case strconv.Itoa(common.RedemptionCodeStatusDisabled):
+			query = query.Where("status = ?", common.RedemptionCodeStatusDisabled)
+		case strconv.Itoa(common.RedemptionCodeStatusUsed):
+			query = query.Where("status = ?", common.RedemptionCodeStatusUsed)
+		default:
+			query = query.Where(
+				"status = ? AND (expired_time = 0 OR expired_time >= ?)",
+				common.RedemptionCodeStatusEnabled,
+				now,
+			)
+		}
+	} else {
+		query = query.Where(
+			"status = ? AND (expired_time = 0 OR expired_time >= ?)",
+			common.RedemptionCodeStatusEnabled,
+			common.GetTimestamp(),
+		)
+	}
+
+	var redemptions []*Redemption
+	err := query.Order("id asc").Find(&redemptions).Error
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(redemptions))
+	for _, redemption := range redemptions {
+		keys = append(keys, redemption.Key)
+	}
+	return keys, nil
+}
+
 func GetRedemptionById(id int) (*Redemption, error) {
 	if id == 0 {
 		return nil, errors.New("id 为空！")

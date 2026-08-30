@@ -18,7 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useMemo } from 'react'
+import { ArrowDownWideNarrow } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -28,8 +29,10 @@ import {
   DataTablePage,
   useDataTable,
 } from '@/components/data-table'
+import { Button } from '@/components/ui/button'
 import { useMediaQuery } from '@/hooks'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
+import { cn } from '@/lib/utils'
 
 import { getRedemptions, searchRedemptions } from '../api'
 import {
@@ -127,7 +130,19 @@ export function RedemptionsTable() {
     placeholderData: (previousData) => previousData,
   })
 
-  const redemptions = data?.items || []
+  const [sortInvalidLast, setSortInvalidLast] = useState(true)
+
+  // Keep usable (unused, unexpired) codes at the top of the current page and
+  // push used/disabled/expired ones to the bottom. Array#sort is stable, so
+  // the backend order (id desc) is preserved within each group.
+  const redemptions = useMemo(() => {
+    const items = data?.items || []
+    if (!sortInvalidLast) return items
+    return [...items].sort(
+      (a, b) =>
+        Number(isDisabledRedemptionRow(a)) - Number(isDisabledRedemptionRow(b))
+    )
+  }, [data, sortInvalidLast])
 
   const { table } = useDataTable({
     data: redemptions,
@@ -172,6 +187,23 @@ export function RedemptionsTable() {
       toolbarProps={{
         searchPlaceholder: t('Filter by name or ID...'),
         searchDebounceMs: 500,
+        preActions: (
+          <Button
+            size='sm'
+            variant={sortInvalidLast ? 'secondary' : 'ghost'}
+            onClick={() => setSortInvalidLast((prev) => !prev)}
+            aria-pressed={sortInvalidLast}
+            className={cn(
+              'gap-1.5 px-2',
+              sortInvalidLast
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <ArrowDownWideNarrow className='h-3.5 w-3.5' />
+            {t('Unused first')}
+          </Button>
+        ),
         filters: [
           {
             columnId: 'status',
