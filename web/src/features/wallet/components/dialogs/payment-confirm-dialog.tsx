@@ -30,21 +30,16 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatLocalCurrencyAmount } from '@/lib/currency'
 
 import { DEFAULT_DISCOUNT_RATE } from '../../constants'
-import { getPaymentIcon } from '../../lib'
+import { formatCnyAmount, getPaymentIcon } from '../../lib'
 import type { PaymentMethod } from '../../types'
 
-// All payable amounts in this dialog are already in the display currency
-// (CNY, calculated backend-side as amount × Price); format with the
-// configured currency symbol (¥) without applying any exchange rate again.
-const LOCAL_CURRENCY_FORMAT = {
-  digitsLarge: 2,
-  digitsSmall: 2,
-  abbreviate: false,
-} as const
-
+// All payable amounts in this dialog are already in CNY (calculated
+// backend-side as amount × Price). formatCnyAmount always prefixes ¥ and
+// reads no runtime configuration — the previous config-driven symbol chain
+// (quota_display_type / custom_currency_symbol) could degrade to "$" or a
+// bare number when the cached config was missing or non-CNY.
 interface PaymentConfirmDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -93,11 +88,7 @@ export function PaymentConfirmDialog({
               {t('Topup Amount')}
             </span>
             <span className='text-lg font-semibold'>
-              {formatLocalCurrencyAmount(topupAmount * usdExchangeRate, {
-                digitsLarge: 2,
-                digitsSmall: 2,
-                abbreviate: false,
-              })}
+              {formatCnyAmount(topupAmount * usdExchangeRate)}
             </span>
           </div>
 
@@ -110,17 +101,11 @@ export function PaymentConfirmDialog({
             ) : (
               <div className='flex items-baseline gap-2'>
                 <span className='text-2xl font-semibold'>
-                  {formatLocalCurrencyAmount(
-                    paymentAmount,
-                    LOCAL_CURRENCY_FORMAT
-                  )}
+                  {formatCnyAmount(paymentAmount)}
                 </span>
                 {hasDiscount && (
                   <span className='text-muted-foreground text-sm line-through'>
-                    {formatLocalCurrencyAmount(
-                      originalAmount,
-                      LOCAL_CURRENCY_FORMAT
-                    )}
+                    {formatCnyAmount(originalAmount)}
                   </span>
                 )}
               </div>
@@ -132,10 +117,7 @@ export function PaymentConfirmDialog({
               <div className='flex items-center justify-between text-sm'>
                 <span className='text-muted-foreground'>{t('You save')}</span>
                 <span className='font-semibold text-green-600'>
-                  {formatLocalCurrencyAmount(
-                    discountAmount,
-                    LOCAL_CURRENCY_FORMAT
-                  )}
+                  {formatCnyAmount(discountAmount)}
                 </span>
               </div>
             </div>

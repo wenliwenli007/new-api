@@ -67,9 +67,17 @@ export const DEFAULT_MIN_TOPUP = 1
 
 /**
  * C2C deployment (RMB-only site): CNY charged per USD topup unit
- * (¥7.2 per $1 of quota). Only used as a fallback while `/api/status`
- * has not provided `price`; must match the backend `operation_setting.Price`
- * / custom_currency_exchange_rate (both configured to 7.2).
- * See cnyToTopupUnits / topupUnitsToCny in lib/format.ts for the conversion.
+ * (¥7.2 per $1 of quota).
+ *
+ * This is the SINGLE deterministic fallback constant for the wallet page,
+ * used BOTH for unit conversion (cnyToTopupUnits / topupUnitsToCny) and for
+ * currency display (index.tsx effectiveUsdExchangeRate) whenever the
+ * /api/status-derived currency config is missing, stale or not CNY; the
+ * figures themselves are rendered by formatCnyAmount (always ¥). The site
+ * faces RMB users, so the fallback must always be a ¥ rate — never $ or a
+ * bare number.
+ *
+ * Must match the backend `operation_setting.Price` /
+ * custom_currency_exchange_rate (both configured to 7.2).
  */
 export const FALLBACK_CNY_PER_UNIT = 7.2

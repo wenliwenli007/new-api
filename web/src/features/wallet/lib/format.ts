@@ -61,6 +61,33 @@ export function formatCurrency(amount: number | string): string {
   }).format(numeric)
 }
 
+/**
+ * Deterministic CNY (¥) formatter for every payable figure on this site.
+ *
+ * This deployment serves RMB users only, so topup amounts must ALWAYS carry
+ * the ¥ prefix. Unlike formatLocalCurrencyAmount (@/lib/currency), this
+ * helper reads NO runtime/admin-provided configuration: the previous chain
+ * (quota_display_type / custom_currency_symbol delivered by /api/status and
+ * cached in the zustand store + localStorage) can be missing, stale or
+ * non-CNY — in which case amounts silently degraded to "$", "¤" or a bare
+ * number. The deterministic fallback for this RMB-only site is ¥ at the
+ * fixed rate FALLBACK_CNY_PER_UNIT (¥7.2 per topup unit, constants.ts);
+ * the rate itself is applied by callers (index.tsx), this function only
+ * renders the ¥ figure.
+ */
+export function formatCnyAmount(amount: number | string): string {
+  const numeric =
+    typeof amount === 'number' ? amount : Number.parseFloat(String(amount))
+  if (!Number.isFinite(numeric)) return '-'
+
+  // 'zh-CN' is pinned so the decimal separator stays "." regardless of the
+  // visitor's browser locale — these are money figures shown before payment.
+  return `¥${new Intl.NumberFormat('zh-CN', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: Math.abs(numeric) >= 1 ? 2 : 4,
+  }).format(numeric)}`
+}
+
 // ============================================================================
 // C2C Topup Unit Conversion (RMB-first display semantics)
 // ============================================================================

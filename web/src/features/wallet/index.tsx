@@ -88,13 +88,6 @@ export function Wallet(props: WalletProps) {
   const { currency } = useSystemConfig()
   const { topupInfo, presetAmounts, loading: topupLoading } = useTopupInfo()
 
-  // Calculate effective exchange rate - when display type is USD, use rate of 1
-  const effectiveUsdExchangeRate = useMemo(() => {
-    return currency?.quotaDisplayType === 'USD'
-      ? 1
-      : currency?.usdExchangeRate || 1
-  }, [currency?.quotaDisplayType, currency?.usdExchangeRate])
-
   // C2C (RMB-only site): the custom topup input is denominated in CNY (元).
   // The backend charges `amount × Price` (CNY) for an INTEGER `amount` of USD
   // quota units, so typed CNY is divided by Price (7.2 here — the same value
@@ -105,6 +98,21 @@ export function Wallet(props: WalletProps) {
     Number.isFinite(statusPrice) && statusPrice > 0
       ? statusPrice
       : FALLBACK_CNY_PER_UNIT
+
+  // Display rate for RMB figures (preset tiers, payable previews). The
+  // currency config arrives asynchronously via /api/status and can be
+  // missing, stale or non-CNY; in that case fall back deterministically to
+  // the fixed ¥/unit rate (FALLBACK_CNY_PER_UNIT) instead of degrading to
+  // $1-per-unit or bare numbers. Amounts are rendered by formatCnyAmount
+  // (always ¥) in RechargeFormCard.
+  const effectiveUsdExchangeRate = useMemo(() => {
+    if (currency?.quotaDisplayType === 'CNY') {
+      return currency?.usdExchangeRate && currency.usdExchangeRate > 0
+        ? currency.usdExchangeRate
+        : cnyPerUnit
+    }
+    return cnyPerUnit
+  }, [currency?.quotaDisplayType, currency?.usdExchangeRate, cnyPerUnit])
   const {
     amount: paymentAmount,
     calculating,
