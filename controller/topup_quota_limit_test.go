@@ -96,38 +96,46 @@ func TestValidateTopUpQuotaReturnsMaximumAmount(t *testing.T) {
 
 func TestRequestAmountRejectsTopUpThatCannotBeSettled(t *testing.T) {
 	oldQuotaPerUnit := common.QuotaPerUnit
+	oldPrice := operation_setting.Price
 	oldDisplayType := operation_setting.GetGeneralSetting().QuotaDisplayType
 	common.QuotaPerUnit = 500000
+	operation_setting.Price = 7.2
 	operation_setting.GetGeneralSetting().QuotaDisplayType = operation_setting.QuotaDisplayTypeUSD
 	t.Cleanup(func() {
 		common.QuotaPerUnit = oldQuotaPerUnit
+		operation_setting.Price = oldPrice
 		operation_setting.GetGeneralSetting().QuotaDisplayType = oldDisplayType
 	})
 
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
+	// C2C：amount 为人民币元。入账 quota = round(amount ÷ Price × QuotaPerUnit)，
+	// 超出 MaxWalletQuota 可表示范围的金额必须在预检阶段被拒绝。
 	maxAmount := decimal.NewFromInt(common.MaxWalletQuota).
+		Mul(decimal.NewFromFloat(operation_setting.Price)).
 		Div(decimal.NewFromFloat(common.QuotaPerUnit)).
-		Floor().IntPart()
+		InexactFloat64()
 	ctx.Request = httptest.NewRequest(
 		http.MethodPost,
 		"/api/user/amount",
-		strings.NewReader(fmt.Sprintf(`{"amount":%d}`, maxAmount+1)),
+		strings.NewReader(fmt.Sprintf(`{"amount":%v}`, maxAmount+1)),
 	)
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
 	RequestAmount(ctx)
 
 	assert.Equal(t, http.StatusOK, recorder.Code)
-	assert.JSONEq(t, fmt.Sprintf(`{"message":"error","data":"单笔充值数量不能大于 %d"}`, maxAmount), recorder.Body.String())
+	assert.JSONEq(t, fmt.Sprintf(`{"message":"error","data":"单笔充值金额不能大于 %.2f"}`, maxAmount), recorder.Body.String())
 }
 
 func TestRequestAmountRejectsTopUpThatWouldOverflowWallet(t *testing.T) {
 	oldQuotaPerUnit := common.QuotaPerUnit
+	oldPrice := operation_setting.Price
 	oldDisplayType := operation_setting.GetGeneralSetting().QuotaDisplayType
 	oldDB := model.DB
 	common.QuotaPerUnit = 500000
+	operation_setting.Price = 7.2
 	operation_setting.GetGeneralSetting().QuotaDisplayType = operation_setting.QuotaDisplayTypeUSD
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -136,6 +144,7 @@ func TestRequestAmountRejectsTopUpThatWouldOverflowWallet(t *testing.T) {
 	model.DB = db
 	t.Cleanup(func() {
 		common.QuotaPerUnit = oldQuotaPerUnit
+		operation_setting.Price = oldPrice
 		operation_setting.GetGeneralSetting().QuotaDisplayType = oldDisplayType
 		model.DB = oldDB
 		sqlDB, dbErr := db.DB()
@@ -155,10 +164,11 @@ func TestRequestAmountRejectsTopUpThatWouldOverflowWallet(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Set("id", 42)
+	// ¥1.5 → round(1.5 ÷ 7.2 × 500000) = 104167 quota > 用户剩余可入账空间 100000
 	ctx.Request = httptest.NewRequest(
 		http.MethodPost,
 		"/api/user/amount",
-		strings.NewReader(`{"amount":1}`),
+		strings.NewReader(`{"amount":1.5}`),
 	)
 	ctx.Request.Header.Set("Content-Type", "application/json")
 

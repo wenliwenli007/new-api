@@ -16,12 +16,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { SectionPageLayout } from '@/components/layout'
 import { useStatus } from '@/hooks/use-status'
-import { useSystemConfig } from '@/hooks/use-system-config'
 import { getSelf } from '@/lib/api'
 
 import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
@@ -85,34 +84,19 @@ export function Wallet(props: WalletProps) {
   const [showSubscriptionPanel, setShowSubscriptionPanel] = useState(true)
 
   const { status } = useStatus()
-  const { currency } = useSystemConfig()
   const { topupInfo, presetAmounts, loading: topupLoading } = useTopupInfo()
 
-  // C2C (RMB-only site): the custom topup input is denominated in CNY (元).
-  // The backend charges `amount × Price` (CNY) for an INTEGER `amount` of USD
-  // quota units, so typed CNY is divided by Price (7.2 here — the same value
-  // as the display exchange rate) and snapped to the nearest unit inside
-  // RechargeFormCard. Only used until /api/status provides `price`.
+  // C2C (RMB-only site): the topup amount IS CNY (元) end to end — the user
+  // types yuan, the backend receives yuan (1:1) and credits
+  // round(amount ÷ Price × QuotaPerUnit) quota. This rate (¥ per $1 of
+  // quota) is only used for the "estimated credit in USD" hint
+  // (amount ÷ Price), with a deterministic fallback until /api/status
+  // provides `price`.
   const statusPrice = Number(status?.price)
   const cnyPerUnit =
     Number.isFinite(statusPrice) && statusPrice > 0
       ? statusPrice
       : FALLBACK_CNY_PER_UNIT
-
-  // Display rate for RMB figures (preset tiers, payable previews). The
-  // currency config arrives asynchronously via /api/status and can be
-  // missing, stale or non-CNY; in that case fall back deterministically to
-  // the fixed ¥/unit rate (FALLBACK_CNY_PER_UNIT) instead of degrading to
-  // $1-per-unit or bare numbers. Amounts are rendered by formatCnyAmount
-  // (always ¥) in RechargeFormCard.
-  const effectiveUsdExchangeRate = useMemo(() => {
-    if (currency?.quotaDisplayType === 'CNY') {
-      return currency?.usdExchangeRate && currency.usdExchangeRate > 0
-        ? currency.usdExchangeRate
-        : cnyPerUnit
-    }
-    return cnyPerUnit
-  }, [currency?.quotaDisplayType, currency?.usdExchangeRate, cnyPerUnit])
   const {
     amount: paymentAmount,
     calculating,
@@ -338,8 +322,6 @@ export function Wallet(props: WalletProps) {
                   redeeming={redeeming}
                   topupLink={topupInfo?.topup_link}
                   loading={topupLoading}
-                  priceRatio={(status?.price as number) || 1}
-                  usdExchangeRate={effectiveUsdExchangeRate}
                   cnyPerUnit={cnyPerUnit}
                   onOpenBilling={() => setBillingDialogOpen(true)}
                   creemProducts={topupInfo?.creem_products}
@@ -386,7 +368,6 @@ export function Wallet(props: WalletProps) {
         calculating={calculating}
         processing={processing || waffoProcessing || pancakeProcessing}
         discountRate={getDiscountRate()}
-        usdExchangeRate={effectiveUsdExchangeRate}
       />
 
       <TransferDialog

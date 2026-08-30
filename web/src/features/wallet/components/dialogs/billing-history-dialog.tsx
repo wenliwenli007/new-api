@@ -45,7 +45,6 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { formatCurrencyFromUSD } from '@/lib/currency'
 import { formatNumber } from '@/lib/format'
 
 import { useBillingHistory } from '../../hooks/use-billing-history'
@@ -54,6 +53,7 @@ import {
   getPaymentMethodName,
   formatTimestamp,
 } from '../../lib/billing'
+import { formatCnyAmount } from '../../lib'
 
 interface BillingHistoryDialogProps {
   open: boolean
@@ -241,11 +241,12 @@ export function BillingHistoryDialog({
                             {t('Amount')}
                           </Label>
                           <div className='text-sm font-semibold'>
-                            {formatCurrencyFromUSD(record.amount, {
-                              digitsLarge: 2,
-                              digitsSmall: 2,
-                              abbreviate: false,
-                            })}
+                            {/* CNY-native: `money` is the yuan figure the
+                                user paid (epay 1:1 with the typed amount).
+                                `record.amount` is now the credited quota for
+                                epay orders, so it must not be rendered as a
+                                currency directly. */}
+                            {formatCnyAmount(record.money)}
                           </div>
                         </div>
                         <div className='space-y-1'>

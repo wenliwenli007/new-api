@@ -112,7 +112,9 @@ export function usePayment() {
         setProcessing(true)
 
         const isStripe = isStripePayment(paymentType)
-        const amount = Math.floor(topupAmount)
+        // C2C: the topup amount IS the CNY (yuan) figure and is passed
+        // through as-is (two decimals supported). No flooring.
+        const amount = topupAmount
 
         const response = isStripe
           ? await requestStripePayment({

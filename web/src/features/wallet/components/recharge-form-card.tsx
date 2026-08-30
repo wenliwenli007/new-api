@@ -38,13 +38,11 @@ import { formatNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 import {
-  cnyToTopupUnits,
   formatCnyAmount,
   getDiscountLabel,
   getPaymentIcon,
   getMinTopupAmount,
   calculatePresetPricing,
-  topupUnitsToCny,
 } from '../lib'
 import { FALLBACK_CNY_PER_UNIT } from '../constants'
 import type {
@@ -80,12 +78,11 @@ interface RechargeFormCardProps {
   redeeming: boolean
   topupLink?: string
   loading?: boolean
-  priceRatio?: number
-  usdExchangeRate?: number
   /**
-   * CNY charged per USD topup unit (backend `amount × Price`), used to
-   * convert the CNY-denominated custom input into the integer unit amount
-   * the backend expects. See FALLBACK_CNY_PER_UNIT / lib/format.ts.
+   * CNY per $1 of quota (backend `operation_setting.Price`), used ONLY for
+   * the "estimated credit in USD" hint (amount ÷ cnyPerUnit). The topup
+   * amount itself is CNY-native and needs no conversion. See
+   * FALLBACK_CNY_PER_UNIT / constants.ts.
    */
   cnyPerUnit?: number
   onOpenBilling?: () => void
@@ -116,8 +113,6 @@ export function RechargeFormCard({
   redeeming,
   topupLink,
   loading,
-  priceRatio = 1,
-  usdExchangeRate = 1,
   cnyPerUnit = FALLBACK_CNY_PER_UNIT,
   onOpenBilling,
   creemProducts,
@@ -130,38 +125,36 @@ export function RechargeFormCard({
   enableWaffoPancakeTopup,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
-  // The custom amount input is denominated in CNY (元) for this RMB-only
-  // deployment; `topupAmount` (units) stays the backend semantic.
+  // The topup amount is CNY (元) end to end: `topupAmount` IS the CNY figure
+  // sent to the backend (1:1, supports two decimals). No unit conversion.
   const [localAmount, setLocalAmount] = useState(() =>
-    topupAmount > 0 ? String(topupUnitsToCny(topupAmount, cnyPerUnit)) : ''
+    topupAmount > 0 ? String(topupAmount) : ''
   )
 
   useEffect(() => {
-    // Sync the input (CNY) when the unit amount changes from outside
-    // (initial load, preset click). If the text already in the field maps
-    // back to the same unit amount, keep it so typing is not clobbered.
-    // Empty string must survive, otherwise the field can never be cleared.
+    // Sync the input (CNY) when the amount changes from outside (initial
+    // load, preset click). If the text already in the field is the same
+    // figure, keep it so typing is not clobbered. Empty string must
+    // survive, otherwise the field can never be cleared.
     setLocalAmount((prev) => {
       if (prev === '' && topupAmount === 0) return prev
       const prevCny = Number.parseFloat(prev)
-      if (
-        Number.isFinite(prevCny) &&
-        cnyToTopupUnits(prevCny, cnyPerUnit) === topupAmount
-      ) {
+      if (Number.isFinite(prevCny) && prevCny === topupAmount) {
         return prev
       }
-      return String(topupUnitsToCny(topupAmount, cnyPerUnit))
+      return String(topupAmount)
     })
-  }, [topupAmount, cnyPerUnit])
+  }, [topupAmount])
 
   const handleAmountChange = (value: string) => {
     setLocalAmount(value)
-    // Input is CNY (元): snap to the integer USD-unit amount the backend
-    // expects (charged as units × Price). The resulting payable amount is
-    // always re-fetched from /api/user/amount and shown before payment.
-    const cnyValue = Number.parseFloat(value) || 0
+    // The input IS the amount in CNY yuan, passed straight to the backend
+    // (which credits round(amount ÷ Price × QuotaPerUnit) quota). Snap to
+    // fen (2 decimals) so the payable figure stays exact.
+    const cnyValue =
+      Math.round((Number.parseFloat(value) || 0) * 100) / 100
     if (cnyValue >= 0) {
-      onTopupAmountChange(cnyToTopupUnits(cnyValue, cnyPerUnit))
+      onTopupAmountChange(cnyValue)
     }
   }
 
@@ -272,12 +265,7 @@ export function RechargeFormCard({
                         actualPrice,
                         savedAmount,
                         hasDiscount,
-                      } = calculatePresetPricing(
-                        preset.value,
-                        priceRatio,
-                        discount,
-                        usdExchangeRate
-                      )
+                      } = calculatePresetPricing(preset.value, discount)
                       return (
                         <Button
                           key={preset.value}
@@ -334,11 +322,10 @@ export function RechargeFormCard({
                     type='number'
                     value={localAmount}
                     onChange={(e) => handleAmountChange(e.target.value)}
-                    min={topupUnitsToCny(minTopup, cnyPerUnit)}
+                    min={minTopup}
+                    step='0.01'
                     placeholder={t('Minimum topup amount: {{amount}}', {
-                      amount: formatCnyAmount(
-                        topupUnitsToCny(minTopup, cnyPerUnit)
-                      ),
+                      amount: formatCnyAmount(minTopup),
                     })}
                     className='h-9 text-base sm:h-10 sm:text-lg'
                   />
@@ -349,14 +336,12 @@ export function RechargeFormCard({
                     {calculating ? (
                       <Skeleton className='h-5 w-16' />
                     ) : topupAmount < minTopup ? (
-                      // Below the minimum (e.g. a CNY figure that rounds to
-                      // 0 topup units): show the required minimum instead of
-                      // a meaningless ¥0.
+                      // Below the minimum (e.g. an empty or too-small CNY
+                      // figure): show the required minimum instead of a
+                      // meaningless ¥0.
                       <span className='text-warning text-right text-xs leading-4 font-medium'>
                         {t('Minimum topup amount: {{amount}}', {
-                          amount: formatCnyAmount(
-                            topupUnitsToCny(minTopup, cnyPerUnit)
-                          ),
+                          amount: formatCnyAmount(minTopup),
                         })}
                       </span>
                     ) : (
@@ -369,10 +354,10 @@ export function RechargeFormCard({
                 {topupAmount > 0 && (
                   <p className='text-muted-foreground text-xs'>
                     {t('Estimated credit: {{usd}} / {{cny}}', {
-                      usd: `$${formatNumber(topupAmount)}`,
-                      cny: formatCnyAmount(
-                        topupUnitsToCny(topupAmount, usdExchangeRate)
-                      ),
+                      usd: `$${formatNumber(
+                        Math.round((topupAmount / cnyPerUnit) * 100) / 100
+                      )}`,
+                      cny: formatCnyAmount(topupAmount),
                     })}
                   </p>
                 )}
@@ -390,11 +375,9 @@ export function RechargeFormCard({
                         getMinTopupAmount(topupInfo)
                       )
                       const disabled = minTopup > topupAmount
-                      // Comparison stays in backend units; only the shown
-                      // minimum is converted to the display currency (CNY).
-                      const minTopupDisplay = formatCnyAmount(
-                        topupUnitsToCny(minTopup, cnyPerUnit)
-                      )
+                      // Comparison and display are both in CNY yuan
+                      // (1:1 with the backend amount semantic).
+                      const minTopupDisplay = formatCnyAmount(minTopup)
                       const disabledReason = disabled
                         ? t('Minimum topup amount: {{amount}}', {
                             amount: minTopupDisplay,
@@ -478,9 +461,7 @@ export function RechargeFormCard({
                         const methodKey = `${method.payMethodType ?? 'unknown'}-${method.payMethodName ?? method.name}`
                         const waffoMin = waffoMinTopup || 0
                         const belowMin = waffoMin > topupAmount
-                        const waffoMinDisplay = formatCnyAmount(
-                          topupUnitsToCny(waffoMin, cnyPerUnit)
-                        )
+                        const waffoMinDisplay = formatCnyAmount(waffoMin)
                         const disabledReason = belowMin
                           ? t('Minimum topup amount: {{amount}}', {
                               amount: waffoMinDisplay,

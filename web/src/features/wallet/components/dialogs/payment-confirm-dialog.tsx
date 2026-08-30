@@ -35,11 +35,9 @@ import { DEFAULT_DISCOUNT_RATE } from '../../constants'
 import { formatCnyAmount, getPaymentIcon } from '../../lib'
 import type { PaymentMethod } from '../../types'
 
-// All payable amounts in this dialog are already in CNY (calculated
-// backend-side as amount × Price). formatCnyAmount always prefixes ¥ and
-// reads no runtime configuration — the previous config-driven symbol chain
-// (quota_display_type / custom_currency_symbol) could degrade to "$" or a
-// bare number when the cached config was missing or non-CNY.
+// All payable amounts in this dialog are already in CNY (topup amounts are
+// CNY-native end to end: the backend charges `amount` yuan 1:1).
+// formatCnyAmount always prefixes ¥ and reads no runtime configuration.
 interface PaymentConfirmDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -50,7 +48,6 @@ interface PaymentConfirmDialogProps {
   calculating: boolean
   processing: boolean
   discountRate?: number
-  usdExchangeRate?: number
 }
 
 export function PaymentConfirmDialog({
@@ -63,7 +60,6 @@ export function PaymentConfirmDialog({
   calculating,
   processing,
   discountRate = DEFAULT_DISCOUNT_RATE,
-  usdExchangeRate = 1,
 }: PaymentConfirmDialogProps) {
   const { t } = useTranslation()
   const hasDiscount = discountRate > 0 && discountRate < 1 && paymentAmount > 0
@@ -88,7 +84,7 @@ export function PaymentConfirmDialog({
               {t('Topup Amount')}
             </span>
             <span className='text-lg font-semibold'>
-              {formatCnyAmount(topupAmount * usdExchangeRate)}
+              {formatCnyAmount(topupAmount)}
             </span>
           </div>
 
