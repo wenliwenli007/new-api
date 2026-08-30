@@ -48,14 +48,13 @@ const NEW_API_FOOTER_ATTRIBUTION_KEY = [
   'projectAttributionSuffix',
 ].join('.')
 
-// Platform pages hosted on the same domain but served as static files outside
-// the SPA router. They must stay plain <a target='_blank'> anchors — passing
-// these relative hrefs through FooterLinkItem would render router <Link>s and
-// break navigation to the static files.
+// C2C platform pages. They used to be static files (/contributor.html,
+// /market.html, /health.json) served by the web server outside the SPA; they
+// are now first-class SPA routes, so render them as router <Link>s.
 const PLATFORM_LINKS: FooterLink[] = [
-  { text: 'footer.platformLinks.contributor', href: '/contributor.html' },
-  { text: 'footer.platformLinks.market', href: '/market.html' },
-  { text: 'footer.platformLinks.health', href: '/health.json' },
+  { text: 'footer.platformLinks.contributor', href: '/contributor' },
+  { text: 'footer.platformLinks.market', href: '/market' },
+  { text: 'footer.platformLinks.health', href: '/health' },
 ]
 
 function FooterLinkItem(props: { link: FooterLink }) {
@@ -279,15 +278,13 @@ export function Footer(props: FooterProps) {
             </p>
             <div className='mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5'>
               {PLATFORM_LINKS.map((link) => (
-                <a
+                <Link
                   key={link.href}
-                  href={link.href}
-                  target='_blank'
-                  rel='noopener noreferrer'
+                  to={link.href}
                   className='text-muted-foreground hover:text-foreground text-sm transition-colors duration-200'
                 >
                   {t(link.text)}
-                </a>
+                </Link>
               ))}
             </div>
           </div>
