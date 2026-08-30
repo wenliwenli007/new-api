@@ -100,5 +100,18 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('About'), href: '/about' })
   }
 
+  // C2C platform pages (contributor program / model market / channel health).
+  // Default to visible; the backend HeaderNavModules JSON can hide them with
+  // `contributor/market/health: false`.
+  if (modules?.contributor !== false) {
+    links.push({ title: t('Contributor Program'), href: '/contributor' })
+  }
+  if (modules?.market !== false) {
+    links.push({ title: t('Model Market'), href: '/market' })
+  }
+  if (modules?.health !== false) {
+    links.push({ title: t('Channel Health'), href: '/health' })
+  }
+
   return links
 }
