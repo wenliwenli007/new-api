@@ -33,8 +33,17 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatLocalCurrencyAmount } from '@/lib/currency'
 
 import { DEFAULT_DISCOUNT_RATE } from '../../constants'
-import { formatCurrency, getPaymentIcon } from '../../lib'
+import { getPaymentIcon } from '../../lib'
 import type { PaymentMethod } from '../../types'
+
+// All payable amounts in this dialog are already in the display currency
+// (CNY, calculated backend-side as amount × Price); format with the
+// configured currency symbol (¥) without applying any exchange rate again.
+const LOCAL_CURRENCY_FORMAT = {
+  digitsLarge: 2,
+  digitsSmall: 2,
+  abbreviate: false,
+} as const
 
 interface PaymentConfirmDialogProps {
   open: boolean
@@ -101,11 +110,17 @@ export function PaymentConfirmDialog({
             ) : (
               <div className='flex items-baseline gap-2'>
                 <span className='text-2xl font-semibold'>
-                  {formatCurrency(paymentAmount)}
+                  {formatLocalCurrencyAmount(
+                    paymentAmount,
+                    LOCAL_CURRENCY_FORMAT
+                  )}
                 </span>
                 {hasDiscount && (
                   <span className='text-muted-foreground text-sm line-through'>
-                    {formatCurrency(originalAmount)}
+                    {formatLocalCurrencyAmount(
+                      originalAmount,
+                      LOCAL_CURRENCY_FORMAT
+                    )}
                   </span>
                 )}
               </div>
@@ -117,7 +132,10 @@ export function PaymentConfirmDialog({
               <div className='flex items-center justify-between text-sm'>
                 <span className='text-muted-foreground'>{t('You save')}</span>
                 <span className='font-semibold text-green-600'>
-                  {formatCurrency(discountAmount)}
+                  {formatLocalCurrencyAmount(
+                    discountAmount,
+                    LOCAL_CURRENCY_FORMAT
+                  )}
                 </span>
               </div>
             </div>

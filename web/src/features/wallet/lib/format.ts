@@ -61,6 +61,58 @@ export function formatCurrency(amount: number | string): string {
   }).format(numeric)
 }
 
+// ============================================================================
+// C2C Topup Unit Conversion (RMB-first display semantics)
+// ============================================================================
+
+/**
+ * Convert a CNY (¥) figure typed by the user into the integer "topup unit"
+ * amount the backend expects.
+ *
+ * Backend contract (controller/topup.go, DO NOT change lightly):
+ * - `/api/user/amount` and `/api/user/pay` take `amount` as an int64 number
+ *   of USD quota units (1 unit = 500000 quota = $1). Fractional values are
+ *   rejected by JSON binding, so the result MUST be an integer.
+ * - The user is charged `amount × Price` in CNY (operation_setting.Price,
+ *   7.2 in this deployment — same value as custom_currency_exchange_rate).
+ *
+ * Because only integer units are accepted, a CNY input is snapped to the
+ * NEAREST unit; the exact charge (units × Price) is always shown live via
+ * /api/user/amount and in the payment confirm dialog before the user pays.
+ *
+ * Example: user types ¥10 → Math.round(10 / 7.2) = 1 unit → charged ¥7.2.
+ * If the pricing semantics ever change, this file and FALLBACK_CNY_PER_UNIT
+ * (constants.ts) are the only places to touch.
+ */
+export function cnyToTopupUnits(cny: number, cnyPerUnit: number): number {
+  if (
+    !Number.isFinite(cny) ||
+    cny <= 0 ||
+    !Number.isFinite(cnyPerUnit) ||
+    cnyPerUnit <= 0
+  ) {
+    return 0
+  }
+  return Math.round(cny / cnyPerUnit)
+}
+
+/**
+ * Inverse of {@link cnyToTopupUnits}: convert topup units (USD) back to the
+ * CNY figure shown in the custom amount input (units × price-per-unit).
+ * Rounded to fen (2 decimals) to hide binary float noise (10 / 7.2 * 7.2).
+ */
+export function topupUnitsToCny(units: number, cnyPerUnit: number): number {
+  if (
+    !Number.isFinite(units) ||
+    units <= 0 ||
+    !Number.isFinite(cnyPerUnit) ||
+    cnyPerUnit <= 0
+  ) {
+    return 0
+  }
+  return Math.round(units * cnyPerUnit * 100) / 100
+}
+
 /**
  * Get discount label for display (e.g., "20% OFF")
  */
