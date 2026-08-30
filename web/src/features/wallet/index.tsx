@@ -32,7 +32,11 @@ import { TransferDialog } from './components/dialogs/transfer-dialog'
 import { RechargeFormCard } from './components/recharge-form-card'
 import { SubscriptionPlansCard } from './components/subscription-plans-card'
 import { WalletStatsCard } from './components/wallet-stats-card'
-import { DEFAULT_DISCOUNT_RATE, PAYMENT_TYPES } from './constants'
+import {
+  DEFAULT_DISCOUNT_RATE,
+  FALLBACK_CNY_PER_UNIT,
+  PAYMENT_TYPES,
+} from './constants'
 import {
   useTopupInfo,
   usePayment,
@@ -90,6 +94,17 @@ export function Wallet(props: WalletProps) {
       ? 1
       : currency?.usdExchangeRate || 1
   }, [currency?.quotaDisplayType, currency?.usdExchangeRate])
+
+  // C2C (RMB-only site): the custom topup input is denominated in CNY (元).
+  // The backend charges `amount × Price` (CNY) for an INTEGER `amount` of USD
+  // quota units, so typed CNY is divided by Price (7.2 here — the same value
+  // as the display exchange rate) and snapped to the nearest unit inside
+  // RechargeFormCard. Only used until /api/status provides `price`.
+  const statusPrice = Number(status?.price)
+  const cnyPerUnit =
+    Number.isFinite(statusPrice) && statusPrice > 0
+      ? statusPrice
+      : FALLBACK_CNY_PER_UNIT
   const {
     amount: paymentAmount,
     calculating,
@@ -317,6 +332,7 @@ export function Wallet(props: WalletProps) {
                   loading={topupLoading}
                   priceRatio={(status?.price as number) || 1}
                   usdExchangeRate={effectiveUsdExchangeRate}
+                  cnyPerUnit={cnyPerUnit}
                   onOpenBilling={() => setBillingDialogOpen(true)}
                   creemProducts={topupInfo?.creem_products}
                   enableCreemTopup={topupInfo?.enable_creem_topup}
