@@ -26,6 +26,18 @@ type Redemption struct {
 	ExpiredTime  int64          `json:"expired_time" gorm:"bigint"` // 过期时间，0 表示不过期
 }
 
+// redemptionListOrderClause 返回兑换码管理列表的全局排序 SQL：
+// 有效（未使用且未过期）在前（组 0），失效（已用/禁用/过期）排后（组 1），组内按 id 降序。
+// 仅用于兑换码列表/搜索两条查询；ORDER BY 先于 LIMIT/OFFSET 执行，
+// 因此排序针对全量数据完成后再分页，跨页顺序全局一致。
+func redemptionListOrderClause() string {
+	return fmt.Sprintf(
+		"CASE WHEN status = %d AND (expired_time = 0 OR expired_time >= %d) THEN 0 ELSE 1 END ASC, id DESC",
+		common.RedemptionCodeStatusEnabled,
+		common.GetTimestamp(),
+	)
+}
+
 func GetAllRedemptions(startIdx int, num int) (redemptions []*Redemption, total int64, err error) {
 	// 开始事务
 	tx := DB.Begin()
@@ -45,8 +57,8 @@ func GetAllRedemptions(startIdx int, num int) (redemptions []*Redemption, total 
 		return nil, 0, err
 	}
 
-	// 获取分页数据
-	err = tx.Order("id desc").Limit(num).Offset(startIdx).Find(&redemptions).Error
+	// 获取分页数据（失效码全局排后，见 redemptionListOrderClause）
+	err = tx.Order(redemptionListOrderClause()).Limit(num).Offset(startIdx).Find(&redemptions).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
@@ -110,8 +122,8 @@ func SearchRedemptions(keyword string, status string, startIdx int, num int) (re
 		return nil, 0, err
 	}
 
-	// Get paginated data
-	err = query.Order("id desc").Limit(num).Offset(startIdx).Find(&redemptions).Error
+	// Get paginated data（失效码全局排后，见 redemptionListOrderClause）
+	err = query.Order(redemptionListOrderClause()).Limit(num).Offset(startIdx).Find(&redemptions).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err

@@ -37,17 +37,19 @@ func TestSearchRedemptionsFiltersAndPaginates(t *testing.T) {
 		wantIds   []int
 	}{
 		{
-			name:      "no filters returns all rows",
+			// 全局排序：有效（1,2）在前按 id 降序，失效（5,4,3）排后按 id 降序。
+			name:      "no filters returns valid first, invalid last, id desc",
 			num:       10,
 			wantTotal: 5,
-			wantIds:   []int{5, 4, 3, 2, 1},
+			wantIds:   []int{2, 1, 5, 4, 3},
 		},
 		{
+			// 有效（2,1）在前，过期（3）排后。
 			name:      "keyword filters by name prefix",
 			keyword:   "alpha",
 			num:       10,
 			wantTotal: 3,
-			wantIds:   []int{3, 2, 1},
+			wantIds:   []int{2, 1, 3},
 		},
 		{
 			name:      "enabled status excludes expired rows",
@@ -78,11 +80,12 @@ func TestSearchRedemptionsFiltersAndPaginates(t *testing.T) {
 			wantIds:   []int{5},
 		},
 		{
+			// 全局排序 [2,1,5,4,3] 跳过第 1 条：第 2 页应为 [1,5]（有效组的末尾 + 失效组的开头）。
 			name:      "pagination keeps unpaged total",
 			startIdx:  1,
 			num:       2,
 			wantTotal: 5,
-			wantIds:   []int{4, 3},
+			wantIds:   []int{1, 5},
 		},
 	}
 
