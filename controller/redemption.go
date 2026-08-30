@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/QuantumNous/new-api/common"
@@ -193,6 +195,33 @@ func UpdateRedemption(c *gin.Context) {
 		"data":    cleanRedemption,
 	})
 	return
+}
+
+// ExportRedemption 以 text/plain 导出兑换码（一行一个码），供发卡平台 TXT 导入。
+// 可选参数 status：默认导出"未使用"（启用且未过期）的码；鉴权与其他 redemption
+// 管理接口完全一致（AdminAuth）。导出动作会记录审计日志。
+func ExportRedemption(c *gin.Context) {
+	status := c.Query("status")
+	keys, err := model.GetRedemptionKeysForExport(status)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	exportStatus := status
+	if exportStatus == "" {
+		exportStatus = "unused"
+	}
+	recordManageAudit(c, "redemption.export", map[string]interface{}{
+		"status": exportStatus,
+		"count":  len(keys),
+	})
+	body := strings.Join(keys, "\n")
+	if body != "" {
+		body += "\n"
+	}
+	filename := "redemption-" + time.Now().Format("2006-01-02") + ".txt"
+	c.Header("Content-Disposition", `attachment; filename="`+filename+`"`)
+	c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(body))
 }
 
 func DeleteInvalidRedemption(c *gin.Context) {

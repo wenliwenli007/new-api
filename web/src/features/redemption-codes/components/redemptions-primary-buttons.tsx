@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Plus, Trash2 } from 'lucide-react'
+import { Download, Loader2, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -24,7 +24,7 @@ import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
 
-import { deleteInvalidRedemptions } from '../api'
+import { deleteInvalidRedemptions, exportRedemptionsTxt } from '../api'
 import { ERROR_MESSAGES } from '../constants'
 import { useRedemptions } from './redemptions-provider'
 
@@ -34,6 +34,25 @@ export function RedemptionsPrimaryButtons() {
   const [showDeleteInvalidConfirm, setShowDeleteInvalidConfirm] =
     useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+
+  const handleExportTxt = async () => {
+    setIsExporting(true)
+    try {
+      const result = await exportRedemptionsTxt()
+      if (result.success) {
+        toast.success(
+          t('Successfully exported {{count}} redemption codes', {
+            count: result.count,
+          })
+        )
+      } else {
+        toast.error(result.message || t(ERROR_MESSAGES.EXPORT_FAILED))
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const handleDeleteInvalid = async () => {
     setIsDeleting(true)
@@ -66,6 +85,19 @@ export function RedemptionsPrimaryButtons() {
         >
           <Trash2 className='text-destructive h-4 w-4' />
           {t('Delete Invalid')}
+        </Button>
+        <Button
+          size='sm'
+          variant='outline'
+          onClick={handleExportTxt}
+          disabled={isExporting}
+        >
+          {isExporting ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <Download className='h-4 w-4' />
+          )}
+          {t('Export TXT')}
         </Button>
         <Button size='sm' onClick={() => setOpen('create')}>
           <Plus className='h-4 w-4' />

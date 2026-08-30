@@ -16,8 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { api } from '@/lib/api'
+import { api, getFreshAuthHeaders } from '@/lib/api'
 
+import { downloadTextFile, getDateStamp } from './lib'
 import type {
   Redemption,
   ApiResponse,
@@ -97,4 +98,67 @@ export async function deleteRedemption(id: number): Promise<ApiResponse> {
 export async function deleteInvalidRedemptions(): Promise<ApiResponse<number>> {
   const res = await api.delete('/api/redemption/invalid')
   return res.data
+}
+
+// ============================================================================
+// Redemption Code TXT Export
+// ============================================================================
+
+export interface ExportRedemptionsResult {
+  success: boolean
+  message?: string
+  count: number
+}
+
+/**
+ * Export redemption codes as a TXT file (one code per line) via the admin
+ * export API. Defaults to all unused codes when no status is given.
+ *
+ * Uses fetch with the Authorization header and saves the response as a blob —
+ * the admin API requires an auth header, so window.open cannot be used.
+ */
+export async function exportRedemptionsTxt(
+  status?: string
+): Promise<ExportRedemptionsResult> {
+  try {
+    const queryParams = new URLSearchParams()
+    if (status) queryParams.set('status', status)
+    const query = queryParams.toString()
+    const headers = await getFreshAuthHeaders()
+    const res = await fetch(
+      `/api/redemption/export${query ? `?${query}` : ''}`,
+      { headers }
+    )
+    if (!res.ok) {
+      return {
+        success: false,
+        message: `HTTP ${res.status}`,
+        count: 0,
+      }
+    }
+    const blob = await res.blob()
+    if ((res.headers.get('content-type') || '').includes('application/json')) {
+      // Backend errors are JSON envelopes (HTTP 200 + success=false)
+      let message = ''
+      try {
+        const payload = JSON.parse(await blob.text())
+        message = payload?.message || ''
+      } catch {
+        // ignore JSON parse errors, fall back to generic message
+      }
+      return { success: false, message, count: 0 }
+    }
+    const text = await blob.text()
+    const exportedCount = text
+      .split('\n')
+      .filter((line) => line.trim() !== '').length
+    downloadTextFile(`redemption-${getDateStamp()}.txt`, text)
+    return { success: true, count: exportedCount }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : undefined,
+      count: 0,
+    }
+  }
 }
