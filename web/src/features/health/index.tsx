@@ -29,6 +29,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
+import { sharellmApi } from '@/features/sharellm/api/client'
+
 type HealthChannel = {
   id: number
   name: string
@@ -72,14 +74,19 @@ const STATUS_VARIANT: Record<string, 'secondary' | 'warning' | 'destructive' | '
 const SKELETON_CARDS = ['card-a', 'card-b']
 
 function fetchHealth(): Promise<HealthPayload> {
-  // /health.json is a static file at the site root (served by the web server,
-  // outside the /api prefix), so it bypasses the axios API client.
-  return fetch('/health.json', { cache: 'no-store' }).then(async (res) => {
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`)
-    }
-    return (await res.json()) as HealthPayload
-  })
+  // Prototype: serve mock health data through the sharellm adapter instead of
+  // the /health.json static file, which the repo does not provide (SRS FR-4).
+  // Swap to the real backend endpoint once /api/sharellm/health lands.
+  return sharellmApi.getHealth().then((h) => ({
+    updated: Math.floor(Date.now() / 1000),
+    channels: h.channels.map((c, i) => ({
+      id: i + 1,
+      name: c.name,
+      status:
+        c.status === 'ok' ? 'ok' : c.status === 'warn' ? 'degraded' : 'down',
+      time: parseFloat(c.latency) || undefined,
+    })),
+  }))
 }
 
 export function ChannelHealth() {
