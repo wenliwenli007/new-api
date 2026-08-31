@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { createFileRoute } from '@tanstack/react-router'
 
-import { ModelMarket } from '@/features/market'
+import { ModelMarket } from '@/features/sharellm/market'
 
 export const Route = createFileRoute('/market/')({
   // Public page: guests can browse the market; "add to route" prompts sign-in.
