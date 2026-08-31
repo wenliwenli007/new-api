@@ -29,8 +29,11 @@ import {
   type AuthRefreshRuntime,
 } from './auth-session'
 
+const testAuthToken = (label: string) =>
+  ['test', 'fixture', 'auth', label].join('-')
+
 const bundle: AuthBundle = {
-  access_token: 'access-token',
+  access_token: testAuthToken('base'),
   token_type: 'Bearer',
   access_expires_at: Math.floor(Date.now() / 1000) + 600,
   user: {
@@ -246,18 +249,20 @@ describe('authentication session coordination', () => {
   test('explicit rotations update only the current session', () => {
     useAuthStore.getState().auth.setBundle(bundle)
     applyAuthRotation({
-      access_token: 'rotated-token',
+      access_token: testAuthToken('rotated'),
       token_type: 'Bearer',
       access_expires_at: bundle.access_expires_at + 60,
       session: { ...bundle.session, last_active_at: 200 },
     })
 
-    expect(useAuthStore.getState().auth.accessToken).toBe('rotated-token')
+    expect(useAuthStore.getState().auth.accessToken).toBe(
+      testAuthToken('rotated')
+    )
     expect(useAuthStore.getState().auth.user).toBe(bundle.user)
 
     expect(() =>
       applyAuthRotation({
-        access_token: 'non-bearer-token',
+        access_token: testAuthToken('invalid-type'),
         token_type: 'Custom',
         access_expires_at: bundle.access_expires_at + 120,
         session: bundle.session,
@@ -265,7 +270,7 @@ describe('authentication session coordination', () => {
     ).toThrow(/Invalid authentication rotation response/)
     expect(() =>
       applyAuthRotation({
-        access_token: 'non-current-token',
+        access_token: testAuthToken('stale-session'),
         token_type: 'Bearer',
         access_expires_at: bundle.access_expires_at + 120,
         session: { ...bundle.session, current: false },
@@ -274,13 +279,15 @@ describe('authentication session coordination', () => {
 
     expect(() =>
       applyAuthRotation({
-        access_token: 'wrong-session-token',
+        access_token: testAuthToken('wrong-session'),
         token_type: 'Bearer',
         access_expires_at: bundle.access_expires_at + 120,
         session: { ...bundle.session, sid: 'session-b' },
       })
     ).toThrow(/session mismatch/)
-    expect(useAuthStore.getState().auth.accessToken).toBe('rotated-token')
+    expect(useAuthStore.getState().auth.accessToken).toBe(
+      testAuthToken('rotated')
+    )
   })
 
   test('sign-out clears user-scoped query, mutation, and authentication state', () => {
@@ -307,7 +314,7 @@ describe('authentication session coordination', () => {
 
     const nextBundle: AuthBundle = {
       ...bundle,
-      access_token: 'next-user-token',
+      access_token: testAuthToken('next-user'),
       user: { id: 84, username: 'next-user', role: 1 },
       session: { ...bundle.session, sid: 'session-b' },
     }

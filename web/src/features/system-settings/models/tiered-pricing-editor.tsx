@@ -1361,9 +1361,10 @@ function PresetSection({ applyPreset }: PresetSectionProps) {
 
 type EstimatorProps = {
   effectiveExpr: string
+  hasRequestRules?: boolean
 }
 
-function CostEstimator({ effectiveExpr }: EstimatorProps) {
+function CostEstimator({ effectiveExpr, hasRequestRules = false }: EstimatorProps) {
   const { t } = useTranslation()
   const [promptTokens, setPromptTokens] = useState(0)
   const [completionTokens, setCompletionTokens] = useState(0)
@@ -1382,11 +1383,17 @@ function CostEstimator({ effectiveExpr }: EstimatorProps) {
     [effectiveExpr]
   )
 
-  const result = useMemo(
-    () =>
-      evalExprLocally(effectiveExpr, promptTokens, completionTokens, extras),
-    [effectiveExpr, promptTokens, completionTokens, extras]
-  )
+  const result = useMemo(() => {
+    if (hasRequestRules) {
+      return {
+        cost: 0,
+        matchedTier: '',
+        error: t('Preview is unavailable for custom expressions.'),
+        unavailable: true,
+      }
+    }
+    return evalExprLocally(effectiveExpr, promptTokens, completionTokens, extras)
+  }, [effectiveExpr, extras, hasRequestRules, promptTokens, completionTokens, t])
 
   return (
     <div className='bg-muted/30 space-y-3 rounded-md border p-3'>
@@ -1448,14 +1455,16 @@ function CostEstimator({ effectiveExpr }: EstimatorProps) {
       <div
         className={cn(
           'rounded-md border p-3 text-sm',
-          result.error
+          result.error || result.unavailable
             ? 'border-destructive/50 bg-destructive/10 text-destructive'
             : 'border-primary/50 bg-primary/10'
         )}
       >
-        {result.error ? (
+        {result.error || result.unavailable ? (
           <span>
-            {t('Expression error')}: {result.error}
+            {result.unavailable
+              ? `${t('Preview unavailable')}: ${result.error ?? t('Preview is unavailable for custom expressions.')}`
+              : `${t('Expression error')}: ${result.error}`}
           </span>
         ) : (
           <div className='flex items-center gap-2'>
@@ -1877,7 +1886,10 @@ export const TieredPricingEditor = memo(function TieredPricingEditor({
         )}
       </div>
 
-      <CostEstimator effectiveExpr={effectiveExpr} />
+      <CostEstimator
+        effectiveExpr={effectiveExpr}
+        hasRequestRules={Boolean(currentRequestRuleExpr)}
+      />
     </div>
   )
 })
