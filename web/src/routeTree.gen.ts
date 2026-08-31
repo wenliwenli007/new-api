@@ -37,10 +37,21 @@ import { Route as PricingIndexRouteImport } from './routes/pricing/index'
 import { Route as RankingsIndexRouteImport } from './routes/rankings/index'
 import { Route as SetupIndexRouteImport } from './routes/setup/index'
 import { Route as authUserResetRouteImport } from './routes/(auth)/user/reset'
+import { Route as AuthenticatedAdminApplicationsRouteImport } from './routes/_authenticated/admin/applications'
+import { Route as AuthenticatedAdminAutoRouterRouteImport } from './routes/_authenticated/admin/auto-router'
+import { Route as AuthenticatedAdminCertPoolsRouteImport } from './routes/_authenticated/admin/cert-pools'
+import { Route as AuthenticatedAdminContributorsRouteImport } from './routes/_authenticated/admin/contributors'
+import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
+import { Route as AuthenticatedAdminProxiesRouteImport } from './routes/_authenticated/admin/proxies'
+import { Route as AuthenticatedAdminTierConfigRouteImport } from './routes/_authenticated/admin/tier-config'
+import { Route as AuthenticatedAdminWithdrawalsRouteImport } from './routes/_authenticated/admin/withdrawals'
 import { Route as AuthenticatedChannelsIndexRouteImport } from './routes/_authenticated/channels/index'
 import { Route as AuthenticatedChatChatIdRouteImport } from './routes/_authenticated/chat/$chatId'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
 import { Route as AuthenticatedDashboardSectionRouteImport } from './routes/_authenticated/dashboard/$section'
+import { Route as AuthenticatedDashboardCallLogsRouteImport } from './routes/_authenticated/dashboard/call-logs'
+import { Route as AuthenticatedDashboardEarningsRouteImport } from './routes/_authenticated/dashboard/earnings'
+import { Route as AuthenticatedDashboardRoutesRouteImport } from './routes/_authenticated/dashboard/routes'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
 import { Route as AuthenticatedKeysIndexRouteImport } from './routes/_authenticated/keys/index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models/index'
@@ -48,6 +59,7 @@ import { Route as AuthenticatedModelsSectionRouteImport } from './routes/_authen
 import { Route as AuthenticatedPlaygroundIndexRouteImport } from './routes/_authenticated/playground/index'
 import { Route as AuthenticatedProfileIndexRouteImport } from './routes/_authenticated/profile/index'
 import { Route as AuthenticatedRedemptionCodesIndexRouteImport } from './routes/_authenticated/redemption-codes/index'
+import { Route as AuthenticatedRouteCenterIndexRouteImport } from './routes/_authenticated/route-center/index'
 import { Route as AuthenticatedSubscriptionsIndexRouteImport } from './routes/_authenticated/subscriptions/index'
 import { Route as AuthenticatedSystemInfoIndexRouteImport } from './routes/_authenticated/system-info/index'
 import { Route as AuthenticatedSystemSettingsIndexRouteImport } from './routes/_authenticated/system-settings/index'
@@ -57,6 +69,7 @@ import { Route as AuthenticatedUsageLogsSectionRouteImport } from './routes/_aut
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
 import { Route as AuthenticatedWalletIndexRouteImport } from './routes/_authenticated/wallet/index'
 import { Route as PricingModelIdIndexRouteImport } from './routes/pricing/$modelId/index'
+import { Route as AuthenticatedDashboardCredentialsIndexRouteImport } from './routes/_authenticated/dashboard/credentials/index'
 import { Route as AuthenticatedSystemSettingsAuthIndexRouteImport } from './routes/_authenticated/system-settings/auth/index'
 import { Route as AuthenticatedSystemSettingsAuthSectionRouteImport } from './routes/_authenticated/system-settings/auth/$section'
 import { Route as AuthenticatedSystemSettingsBillingIndexRouteImport } from './routes/_authenticated/system-settings/billing/index'
@@ -71,6 +84,8 @@ import { Route as AuthenticatedSystemSettingsSecurityIndexRouteImport } from './
 import { Route as AuthenticatedSystemSettingsSecuritySectionRouteImport } from './routes/_authenticated/system-settings/security/$section'
 import { Route as AuthenticatedSystemSettingsSiteIndexRouteImport } from './routes/_authenticated/system-settings/site/index'
 import { Route as AuthenticatedSystemSettingsSiteSectionRouteImport } from './routes/_authenticated/system-settings/site/$section'
+import { Route as AuthenticatedDashboardCredentialsCredentialIdIndexRouteImport } from './routes/_authenticated/dashboard/credentials/$credentialId/index'
+import { Route as AuthenticatedDashboardCredentialsCredentialIdCallRecordsRouteImport } from './routes/_authenticated/dashboard/credentials/$credentialId/call-records'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -211,6 +226,54 @@ const authUserResetRoute = authUserResetRouteImport.update({
   path: '/user/reset',
   getParentRoute: () => authRouteRoute,
 } as any)
+const AuthenticatedAdminApplicationsRoute =
+  AuthenticatedAdminApplicationsRouteImport.update({
+    id: '/admin/applications',
+    path: '/admin/applications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminAutoRouterRoute =
+  AuthenticatedAdminAutoRouterRouteImport.update({
+    id: '/admin/auto-router',
+    path: '/admin/auto-router',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminCertPoolsRoute =
+  AuthenticatedAdminCertPoolsRouteImport.update({
+    id: '/admin/cert-pools',
+    path: '/admin/cert-pools',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminContributorsRoute =
+  AuthenticatedAdminContributorsRouteImport.update({
+    id: '/admin/contributors',
+    path: '/admin/contributors',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminOrdersRoute =
+  AuthenticatedAdminOrdersRouteImport.update({
+    id: '/admin/orders',
+    path: '/admin/orders',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminProxiesRoute =
+  AuthenticatedAdminProxiesRouteImport.update({
+    id: '/admin/proxies',
+    path: '/admin/proxies',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminTierConfigRoute =
+  AuthenticatedAdminTierConfigRouteImport.update({
+    id: '/admin/tier-config',
+    path: '/admin/tier-config',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminWithdrawalsRoute =
+  AuthenticatedAdminWithdrawalsRouteImport.update({
+    id: '/admin/withdrawals',
+    path: '/admin/withdrawals',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedChannelsIndexRoute =
   AuthenticatedChannelsIndexRouteImport.update({
     id: '/channels/',
@@ -232,6 +295,24 @@ const AuthenticatedDashboardSectionRoute =
   AuthenticatedDashboardSectionRouteImport.update({
     id: '/dashboard/$section',
     path: '/dashboard/$section',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardCallLogsRoute =
+  AuthenticatedDashboardCallLogsRouteImport.update({
+    id: '/dashboard/call-logs',
+    path: '/dashboard/call-logs',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardEarningsRoute =
+  AuthenticatedDashboardEarningsRouteImport.update({
+    id: '/dashboard/earnings',
+    path: '/dashboard/earnings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardRoutesRoute =
+  AuthenticatedDashboardRoutesRouteImport.update({
+    id: '/dashboard/routes',
+    path: '/dashboard/routes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedErrorsErrorRoute =
@@ -273,6 +354,12 @@ const AuthenticatedRedemptionCodesIndexRoute =
   AuthenticatedRedemptionCodesIndexRouteImport.update({
     id: '/redemption-codes/',
     path: '/redemption-codes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRouteCenterIndexRoute =
+  AuthenticatedRouteCenterIndexRouteImport.update({
+    id: '/route-center/',
+    path: '/route-center/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedSubscriptionsIndexRoute =
@@ -327,6 +414,12 @@ const PricingModelIdIndexRoute = PricingModelIdIndexRouteImport.update({
   path: '/pricing/$modelId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedDashboardCredentialsIndexRoute =
+  AuthenticatedDashboardCredentialsIndexRouteImport.update({
+    id: '/dashboard/credentials/',
+    path: '/dashboard/credentials/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSystemSettingsAuthIndexRoute =
   AuthenticatedSystemSettingsAuthIndexRouteImport.update({
     id: '/auth/',
@@ -411,6 +504,18 @@ const AuthenticatedSystemSettingsSiteSectionRoute =
     path: '/site/$section',
     getParentRoute: () => AuthenticatedSystemSettingsRouteRoute,
   } as any)
+const AuthenticatedDashboardCredentialsCredentialIdIndexRoute =
+  AuthenticatedDashboardCredentialsCredentialIdIndexRouteImport.update({
+    id: '/dashboard/credentials/$credentialId/',
+    path: '/dashboard/credentials/$credentialId/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardCredentialsCredentialIdCallRecordsRoute =
+  AuthenticatedDashboardCredentialsCredentialIdCallRecordsRouteImport.update({
+    id: '/dashboard/credentials/$credentialId/call-records',
+    path: '/dashboard/credentials/$credentialId/call-records',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -439,8 +544,19 @@ export interface FileRoutesByFullPath {
   '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/user/reset': typeof authUserResetRoute
+  '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
+  '/admin/auto-router': typeof AuthenticatedAdminAutoRouterRoute
+  '/admin/cert-pools': typeof AuthenticatedAdminCertPoolsRoute
+  '/admin/contributors': typeof AuthenticatedAdminContributorsRoute
+  '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/proxies': typeof AuthenticatedAdminProxiesRoute
+  '/admin/tier-config': typeof AuthenticatedAdminTierConfigRoute
+  '/admin/withdrawals': typeof AuthenticatedAdminWithdrawalsRoute
   '/chat/$chatId': typeof AuthenticatedChatChatIdRoute
   '/dashboard/$section': typeof AuthenticatedDashboardSectionRoute
+  '/dashboard/call-logs': typeof AuthenticatedDashboardCallLogsRoute
+  '/dashboard/earnings': typeof AuthenticatedDashboardEarningsRoute
+  '/dashboard/routes': typeof AuthenticatedDashboardRoutesRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/models/$section': typeof AuthenticatedModelsSectionRoute
   '/usage-logs/$section': typeof AuthenticatedUsageLogsSectionRoute
@@ -451,6 +567,7 @@ export interface FileRoutesByFullPath {
   '/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/profile/': typeof AuthenticatedProfileIndexRoute
   '/redemption-codes/': typeof AuthenticatedRedemptionCodesIndexRoute
+  '/route-center/': typeof AuthenticatedRouteCenterIndexRoute
   '/subscriptions/': typeof AuthenticatedSubscriptionsIndexRoute
   '/system-info/': typeof AuthenticatedSystemInfoIndexRoute
   '/system-settings/': typeof AuthenticatedSystemSettingsIndexRoute
@@ -466,6 +583,7 @@ export interface FileRoutesByFullPath {
   '/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
   '/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
+  '/dashboard/credentials/': typeof AuthenticatedDashboardCredentialsIndexRoute
   '/system-settings/auth/': typeof AuthenticatedSystemSettingsAuthIndexRoute
   '/system-settings/billing/': typeof AuthenticatedSystemSettingsBillingIndexRoute
   '/system-settings/content/': typeof AuthenticatedSystemSettingsContentIndexRoute
@@ -473,6 +591,8 @@ export interface FileRoutesByFullPath {
   '/system-settings/operations/': typeof AuthenticatedSystemSettingsOperationsIndexRoute
   '/system-settings/security/': typeof AuthenticatedSystemSettingsSecurityIndexRoute
   '/system-settings/site/': typeof AuthenticatedSystemSettingsSiteIndexRoute
+  '/dashboard/credentials/$credentialId/call-records': typeof AuthenticatedDashboardCredentialsCredentialIdCallRecordsRoute
+  '/dashboard/credentials/$credentialId/': typeof AuthenticatedDashboardCredentialsCredentialIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -500,8 +620,19 @@ export interface FileRoutesByTo {
   '/rankings': typeof RankingsIndexRoute
   '/setup': typeof SetupIndexRoute
   '/user/reset': typeof authUserResetRoute
+  '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
+  '/admin/auto-router': typeof AuthenticatedAdminAutoRouterRoute
+  '/admin/cert-pools': typeof AuthenticatedAdminCertPoolsRoute
+  '/admin/contributors': typeof AuthenticatedAdminContributorsRoute
+  '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/proxies': typeof AuthenticatedAdminProxiesRoute
+  '/admin/tier-config': typeof AuthenticatedAdminTierConfigRoute
+  '/admin/withdrawals': typeof AuthenticatedAdminWithdrawalsRoute
   '/chat/$chatId': typeof AuthenticatedChatChatIdRoute
   '/dashboard/$section': typeof AuthenticatedDashboardSectionRoute
+  '/dashboard/call-logs': typeof AuthenticatedDashboardCallLogsRoute
+  '/dashboard/earnings': typeof AuthenticatedDashboardEarningsRoute
+  '/dashboard/routes': typeof AuthenticatedDashboardRoutesRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/models/$section': typeof AuthenticatedModelsSectionRoute
   '/usage-logs/$section': typeof AuthenticatedUsageLogsSectionRoute
@@ -512,6 +643,7 @@ export interface FileRoutesByTo {
   '/playground': typeof AuthenticatedPlaygroundIndexRoute
   '/profile': typeof AuthenticatedProfileIndexRoute
   '/redemption-codes': typeof AuthenticatedRedemptionCodesIndexRoute
+  '/route-center': typeof AuthenticatedRouteCenterIndexRoute
   '/subscriptions': typeof AuthenticatedSubscriptionsIndexRoute
   '/system-info': typeof AuthenticatedSystemInfoIndexRoute
   '/system-settings': typeof AuthenticatedSystemSettingsIndexRoute
@@ -527,6 +659,7 @@ export interface FileRoutesByTo {
   '/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
   '/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
+  '/dashboard/credentials': typeof AuthenticatedDashboardCredentialsIndexRoute
   '/system-settings/auth': typeof AuthenticatedSystemSettingsAuthIndexRoute
   '/system-settings/billing': typeof AuthenticatedSystemSettingsBillingIndexRoute
   '/system-settings/content': typeof AuthenticatedSystemSettingsContentIndexRoute
@@ -534,6 +667,8 @@ export interface FileRoutesByTo {
   '/system-settings/operations': typeof AuthenticatedSystemSettingsOperationsIndexRoute
   '/system-settings/security': typeof AuthenticatedSystemSettingsSecurityIndexRoute
   '/system-settings/site': typeof AuthenticatedSystemSettingsSiteIndexRoute
+  '/dashboard/credentials/$credentialId/call-records': typeof AuthenticatedDashboardCredentialsCredentialIdCallRecordsRoute
+  '/dashboard/credentials/$credentialId': typeof AuthenticatedDashboardCredentialsCredentialIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -565,8 +700,19 @@ export interface FileRoutesById {
   '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/(auth)/user/reset': typeof authUserResetRoute
+  '/_authenticated/admin/applications': typeof AuthenticatedAdminApplicationsRoute
+  '/_authenticated/admin/auto-router': typeof AuthenticatedAdminAutoRouterRoute
+  '/_authenticated/admin/cert-pools': typeof AuthenticatedAdminCertPoolsRoute
+  '/_authenticated/admin/contributors': typeof AuthenticatedAdminContributorsRoute
+  '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/_authenticated/admin/proxies': typeof AuthenticatedAdminProxiesRoute
+  '/_authenticated/admin/tier-config': typeof AuthenticatedAdminTierConfigRoute
+  '/_authenticated/admin/withdrawals': typeof AuthenticatedAdminWithdrawalsRoute
   '/_authenticated/chat/$chatId': typeof AuthenticatedChatChatIdRoute
   '/_authenticated/dashboard/$section': typeof AuthenticatedDashboardSectionRoute
+  '/_authenticated/dashboard/call-logs': typeof AuthenticatedDashboardCallLogsRoute
+  '/_authenticated/dashboard/earnings': typeof AuthenticatedDashboardEarningsRoute
+  '/_authenticated/dashboard/routes': typeof AuthenticatedDashboardRoutesRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/_authenticated/models/$section': typeof AuthenticatedModelsSectionRoute
   '/_authenticated/usage-logs/$section': typeof AuthenticatedUsageLogsSectionRoute
@@ -577,6 +723,7 @@ export interface FileRoutesById {
   '/_authenticated/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/_authenticated/profile/': typeof AuthenticatedProfileIndexRoute
   '/_authenticated/redemption-codes/': typeof AuthenticatedRedemptionCodesIndexRoute
+  '/_authenticated/route-center/': typeof AuthenticatedRouteCenterIndexRoute
   '/_authenticated/subscriptions/': typeof AuthenticatedSubscriptionsIndexRoute
   '/_authenticated/system-info/': typeof AuthenticatedSystemInfoIndexRoute
   '/_authenticated/system-settings/': typeof AuthenticatedSystemSettingsIndexRoute
@@ -592,6 +739,7 @@ export interface FileRoutesById {
   '/_authenticated/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
   '/_authenticated/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/_authenticated/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
+  '/_authenticated/dashboard/credentials/': typeof AuthenticatedDashboardCredentialsIndexRoute
   '/_authenticated/system-settings/auth/': typeof AuthenticatedSystemSettingsAuthIndexRoute
   '/_authenticated/system-settings/billing/': typeof AuthenticatedSystemSettingsBillingIndexRoute
   '/_authenticated/system-settings/content/': typeof AuthenticatedSystemSettingsContentIndexRoute
@@ -599,6 +747,8 @@ export interface FileRoutesById {
   '/_authenticated/system-settings/operations/': typeof AuthenticatedSystemSettingsOperationsIndexRoute
   '/_authenticated/system-settings/security/': typeof AuthenticatedSystemSettingsSecurityIndexRoute
   '/_authenticated/system-settings/site/': typeof AuthenticatedSystemSettingsSiteIndexRoute
+  '/_authenticated/dashboard/credentials/$credentialId/call-records': typeof AuthenticatedDashboardCredentialsCredentialIdCallRecordsRoute
+  '/_authenticated/dashboard/credentials/$credentialId/': typeof AuthenticatedDashboardCredentialsCredentialIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -629,8 +779,19 @@ export interface FileRouteTypes {
     | '/rankings/'
     | '/setup/'
     | '/user/reset'
+    | '/admin/applications'
+    | '/admin/auto-router'
+    | '/admin/cert-pools'
+    | '/admin/contributors'
+    | '/admin/orders'
+    | '/admin/proxies'
+    | '/admin/tier-config'
+    | '/admin/withdrawals'
     | '/chat/$chatId'
     | '/dashboard/$section'
+    | '/dashboard/call-logs'
+    | '/dashboard/earnings'
+    | '/dashboard/routes'
     | '/errors/$error'
     | '/models/$section'
     | '/usage-logs/$section'
@@ -641,6 +802,7 @@ export interface FileRouteTypes {
     | '/playground/'
     | '/profile/'
     | '/redemption-codes/'
+    | '/route-center/'
     | '/subscriptions/'
     | '/system-info/'
     | '/system-settings/'
@@ -656,6 +818,7 @@ export interface FileRouteTypes {
     | '/system-settings/operations/$section'
     | '/system-settings/security/$section'
     | '/system-settings/site/$section'
+    | '/dashboard/credentials/'
     | '/system-settings/auth/'
     | '/system-settings/billing/'
     | '/system-settings/content/'
@@ -663,6 +826,8 @@ export interface FileRouteTypes {
     | '/system-settings/operations/'
     | '/system-settings/security/'
     | '/system-settings/site/'
+    | '/dashboard/credentials/$credentialId/call-records'
+    | '/dashboard/credentials/$credentialId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -690,8 +855,19 @@ export interface FileRouteTypes {
     | '/rankings'
     | '/setup'
     | '/user/reset'
+    | '/admin/applications'
+    | '/admin/auto-router'
+    | '/admin/cert-pools'
+    | '/admin/contributors'
+    | '/admin/orders'
+    | '/admin/proxies'
+    | '/admin/tier-config'
+    | '/admin/withdrawals'
     | '/chat/$chatId'
     | '/dashboard/$section'
+    | '/dashboard/call-logs'
+    | '/dashboard/earnings'
+    | '/dashboard/routes'
     | '/errors/$error'
     | '/models/$section'
     | '/usage-logs/$section'
@@ -702,6 +878,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/profile'
     | '/redemption-codes'
+    | '/route-center'
     | '/subscriptions'
     | '/system-info'
     | '/system-settings'
@@ -717,6 +894,7 @@ export interface FileRouteTypes {
     | '/system-settings/operations/$section'
     | '/system-settings/security/$section'
     | '/system-settings/site/$section'
+    | '/dashboard/credentials'
     | '/system-settings/auth'
     | '/system-settings/billing'
     | '/system-settings/content'
@@ -724,6 +902,8 @@ export interface FileRouteTypes {
     | '/system-settings/operations'
     | '/system-settings/security'
     | '/system-settings/site'
+    | '/dashboard/credentials/$credentialId/call-records'
+    | '/dashboard/credentials/$credentialId'
   id:
     | '__root__'
     | '/'
@@ -754,8 +934,19 @@ export interface FileRouteTypes {
     | '/rankings/'
     | '/setup/'
     | '/(auth)/user/reset'
+    | '/_authenticated/admin/applications'
+    | '/_authenticated/admin/auto-router'
+    | '/_authenticated/admin/cert-pools'
+    | '/_authenticated/admin/contributors'
+    | '/_authenticated/admin/orders'
+    | '/_authenticated/admin/proxies'
+    | '/_authenticated/admin/tier-config'
+    | '/_authenticated/admin/withdrawals'
     | '/_authenticated/chat/$chatId'
     | '/_authenticated/dashboard/$section'
+    | '/_authenticated/dashboard/call-logs'
+    | '/_authenticated/dashboard/earnings'
+    | '/_authenticated/dashboard/routes'
     | '/_authenticated/errors/$error'
     | '/_authenticated/models/$section'
     | '/_authenticated/usage-logs/$section'
@@ -766,6 +957,7 @@ export interface FileRouteTypes {
     | '/_authenticated/playground/'
     | '/_authenticated/profile/'
     | '/_authenticated/redemption-codes/'
+    | '/_authenticated/route-center/'
     | '/_authenticated/subscriptions/'
     | '/_authenticated/system-info/'
     | '/_authenticated/system-settings/'
@@ -781,6 +973,7 @@ export interface FileRouteTypes {
     | '/_authenticated/system-settings/operations/$section'
     | '/_authenticated/system-settings/security/$section'
     | '/_authenticated/system-settings/site/$section'
+    | '/_authenticated/dashboard/credentials/'
     | '/_authenticated/system-settings/auth/'
     | '/_authenticated/system-settings/billing/'
     | '/_authenticated/system-settings/content/'
@@ -788,6 +981,8 @@ export interface FileRouteTypes {
     | '/_authenticated/system-settings/operations/'
     | '/_authenticated/system-settings/security/'
     | '/_authenticated/system-settings/site/'
+    | '/_authenticated/dashboard/credentials/$credentialId/call-records'
+    | '/_authenticated/dashboard/credentials/$credentialId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1010,6 +1205,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authUserResetRouteImport
       parentRoute: typeof authRouteRoute
     }
+    '/_authenticated/admin/applications': {
+      id: '/_authenticated/admin/applications'
+      path: '/admin/applications'
+      fullPath: '/admin/applications'
+      preLoaderRoute: typeof AuthenticatedAdminApplicationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/auto-router': {
+      id: '/_authenticated/admin/auto-router'
+      path: '/admin/auto-router'
+      fullPath: '/admin/auto-router'
+      preLoaderRoute: typeof AuthenticatedAdminAutoRouterRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/cert-pools': {
+      id: '/_authenticated/admin/cert-pools'
+      path: '/admin/cert-pools'
+      fullPath: '/admin/cert-pools'
+      preLoaderRoute: typeof AuthenticatedAdminCertPoolsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/contributors': {
+      id: '/_authenticated/admin/contributors'
+      path: '/admin/contributors'
+      fullPath: '/admin/contributors'
+      preLoaderRoute: typeof AuthenticatedAdminContributorsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/orders': {
+      id: '/_authenticated/admin/orders'
+      path: '/admin/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AuthenticatedAdminOrdersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/proxies': {
+      id: '/_authenticated/admin/proxies'
+      path: '/admin/proxies'
+      fullPath: '/admin/proxies'
+      preLoaderRoute: typeof AuthenticatedAdminProxiesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/tier-config': {
+      id: '/_authenticated/admin/tier-config'
+      path: '/admin/tier-config'
+      fullPath: '/admin/tier-config'
+      preLoaderRoute: typeof AuthenticatedAdminTierConfigRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/withdrawals': {
+      id: '/_authenticated/admin/withdrawals'
+      path: '/admin/withdrawals'
+      fullPath: '/admin/withdrawals'
+      preLoaderRoute: typeof AuthenticatedAdminWithdrawalsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/channels/': {
       id: '/_authenticated/channels/'
       path: '/channels'
@@ -1036,6 +1287,27 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/$section'
       fullPath: '/dashboard/$section'
       preLoaderRoute: typeof AuthenticatedDashboardSectionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard/call-logs': {
+      id: '/_authenticated/dashboard/call-logs'
+      path: '/dashboard/call-logs'
+      fullPath: '/dashboard/call-logs'
+      preLoaderRoute: typeof AuthenticatedDashboardCallLogsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard/earnings': {
+      id: '/_authenticated/dashboard/earnings'
+      path: '/dashboard/earnings'
+      fullPath: '/dashboard/earnings'
+      preLoaderRoute: typeof AuthenticatedDashboardEarningsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard/routes': {
+      id: '/_authenticated/dashboard/routes'
+      path: '/dashboard/routes'
+      fullPath: '/dashboard/routes'
+      preLoaderRoute: typeof AuthenticatedDashboardRoutesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/errors/$error': {
@@ -1085,6 +1357,13 @@ declare module '@tanstack/react-router' {
       path: '/redemption-codes'
       fullPath: '/redemption-codes/'
       preLoaderRoute: typeof AuthenticatedRedemptionCodesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/route-center/': {
+      id: '/_authenticated/route-center/'
+      path: '/route-center'
+      fullPath: '/route-center/'
+      preLoaderRoute: typeof AuthenticatedRouteCenterIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/subscriptions/': {
@@ -1149,6 +1428,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pricing/$modelId/'
       preLoaderRoute: typeof PricingModelIdIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard/credentials/': {
+      id: '/_authenticated/dashboard/credentials/'
+      path: '/dashboard/credentials'
+      fullPath: '/dashboard/credentials/'
+      preLoaderRoute: typeof AuthenticatedDashboardCredentialsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/system-settings/auth/': {
       id: '/_authenticated/system-settings/auth/'
@@ -1248,6 +1534,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSystemSettingsSiteSectionRouteImport
       parentRoute: typeof AuthenticatedSystemSettingsRouteRoute
     }
+    '/_authenticated/dashboard/credentials/$credentialId/': {
+      id: '/_authenticated/dashboard/credentials/$credentialId/'
+      path: '/dashboard/credentials/$credentialId'
+      fullPath: '/dashboard/credentials/$credentialId/'
+      preLoaderRoute: typeof AuthenticatedDashboardCredentialsCredentialIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard/credentials/$credentialId/call-records': {
+      id: '/_authenticated/dashboard/credentials/$credentialId/call-records'
+      path: '/dashboard/credentials/$credentialId/call-records'
+      fullPath: '/dashboard/credentials/$credentialId/call-records'
+      preLoaderRoute: typeof AuthenticatedDashboardCredentialsCredentialIdCallRecordsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -1337,8 +1637,19 @@ const AuthenticatedSystemSettingsRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSystemSettingsRouteRoute: typeof AuthenticatedSystemSettingsRouteRouteWithChildren
   AuthenticatedChat2linkRoute: typeof AuthenticatedChat2linkRoute
+  AuthenticatedAdminApplicationsRoute: typeof AuthenticatedAdminApplicationsRoute
+  AuthenticatedAdminAutoRouterRoute: typeof AuthenticatedAdminAutoRouterRoute
+  AuthenticatedAdminCertPoolsRoute: typeof AuthenticatedAdminCertPoolsRoute
+  AuthenticatedAdminContributorsRoute: typeof AuthenticatedAdminContributorsRoute
+  AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
+  AuthenticatedAdminProxiesRoute: typeof AuthenticatedAdminProxiesRoute
+  AuthenticatedAdminTierConfigRoute: typeof AuthenticatedAdminTierConfigRoute
+  AuthenticatedAdminWithdrawalsRoute: typeof AuthenticatedAdminWithdrawalsRoute
   AuthenticatedChatChatIdRoute: typeof AuthenticatedChatChatIdRoute
   AuthenticatedDashboardSectionRoute: typeof AuthenticatedDashboardSectionRoute
+  AuthenticatedDashboardCallLogsRoute: typeof AuthenticatedDashboardCallLogsRoute
+  AuthenticatedDashboardEarningsRoute: typeof AuthenticatedDashboardEarningsRoute
+  AuthenticatedDashboardRoutesRoute: typeof AuthenticatedDashboardRoutesRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
   AuthenticatedModelsSectionRoute: typeof AuthenticatedModelsSectionRoute
   AuthenticatedUsageLogsSectionRoute: typeof AuthenticatedUsageLogsSectionRoute
@@ -1349,20 +1660,35 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlaygroundIndexRoute: typeof AuthenticatedPlaygroundIndexRoute
   AuthenticatedProfileIndexRoute: typeof AuthenticatedProfileIndexRoute
   AuthenticatedRedemptionCodesIndexRoute: typeof AuthenticatedRedemptionCodesIndexRoute
+  AuthenticatedRouteCenterIndexRoute: typeof AuthenticatedRouteCenterIndexRoute
   AuthenticatedSubscriptionsIndexRoute: typeof AuthenticatedSubscriptionsIndexRoute
   AuthenticatedSystemInfoIndexRoute: typeof AuthenticatedSystemInfoIndexRoute
   AuthenticatedTaskPluginsIndexRoute: typeof AuthenticatedTaskPluginsIndexRoute
   AuthenticatedUsageLogsIndexRoute: typeof AuthenticatedUsageLogsIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
   AuthenticatedWalletIndexRoute: typeof AuthenticatedWalletIndexRoute
+  AuthenticatedDashboardCredentialsIndexRoute: typeof AuthenticatedDashboardCredentialsIndexRoute
+  AuthenticatedDashboardCredentialsCredentialIdCallRecordsRoute: typeof AuthenticatedDashboardCredentialsCredentialIdCallRecordsRoute
+  AuthenticatedDashboardCredentialsCredentialIdIndexRoute: typeof AuthenticatedDashboardCredentialsCredentialIdIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSystemSettingsRouteRoute:
     AuthenticatedSystemSettingsRouteRouteWithChildren,
   AuthenticatedChat2linkRoute: AuthenticatedChat2linkRoute,
+  AuthenticatedAdminApplicationsRoute: AuthenticatedAdminApplicationsRoute,
+  AuthenticatedAdminAutoRouterRoute: AuthenticatedAdminAutoRouterRoute,
+  AuthenticatedAdminCertPoolsRoute: AuthenticatedAdminCertPoolsRoute,
+  AuthenticatedAdminContributorsRoute: AuthenticatedAdminContributorsRoute,
+  AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
+  AuthenticatedAdminProxiesRoute: AuthenticatedAdminProxiesRoute,
+  AuthenticatedAdminTierConfigRoute: AuthenticatedAdminTierConfigRoute,
+  AuthenticatedAdminWithdrawalsRoute: AuthenticatedAdminWithdrawalsRoute,
   AuthenticatedChatChatIdRoute: AuthenticatedChatChatIdRoute,
   AuthenticatedDashboardSectionRoute: AuthenticatedDashboardSectionRoute,
+  AuthenticatedDashboardCallLogsRoute: AuthenticatedDashboardCallLogsRoute,
+  AuthenticatedDashboardEarningsRoute: AuthenticatedDashboardEarningsRoute,
+  AuthenticatedDashboardRoutesRoute: AuthenticatedDashboardRoutesRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
   AuthenticatedModelsSectionRoute: AuthenticatedModelsSectionRoute,
   AuthenticatedUsageLogsSectionRoute: AuthenticatedUsageLogsSectionRoute,
@@ -1374,12 +1700,19 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfileIndexRoute: AuthenticatedProfileIndexRoute,
   AuthenticatedRedemptionCodesIndexRoute:
     AuthenticatedRedemptionCodesIndexRoute,
+  AuthenticatedRouteCenterIndexRoute: AuthenticatedRouteCenterIndexRoute,
   AuthenticatedSubscriptionsIndexRoute: AuthenticatedSubscriptionsIndexRoute,
   AuthenticatedSystemInfoIndexRoute: AuthenticatedSystemInfoIndexRoute,
   AuthenticatedTaskPluginsIndexRoute: AuthenticatedTaskPluginsIndexRoute,
   AuthenticatedUsageLogsIndexRoute: AuthenticatedUsageLogsIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
   AuthenticatedWalletIndexRoute: AuthenticatedWalletIndexRoute,
+  AuthenticatedDashboardCredentialsIndexRoute:
+    AuthenticatedDashboardCredentialsIndexRoute,
+  AuthenticatedDashboardCredentialsCredentialIdCallRecordsRoute:
+    AuthenticatedDashboardCredentialsCredentialIdCallRecordsRoute,
+  AuthenticatedDashboardCredentialsCredentialIdIndexRoute:
+    AuthenticatedDashboardCredentialsCredentialIdIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
