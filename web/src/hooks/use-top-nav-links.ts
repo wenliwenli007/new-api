@@ -101,8 +101,8 @@ export function useTopNavLinks(): TopNavLink[] {
     }
   }
 
-  // About
-  if (modules?.about !== false) {
+  // About: keep hidden from guests and regular users until the content is revised.
+  if (isAdmin && modules?.about !== false) {
     links.push({ title: t('About'), href: '/about' })
   }
 
