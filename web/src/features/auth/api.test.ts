@@ -23,8 +23,11 @@ import type { AuthBundle } from '@/stores/auth-store'
 
 import { executeLogout } from './api'
 
+const testAuthToken = (label: string) =>
+  ['test', 'fixture', 'auth', label].join('-')
+
 const bundle: AuthBundle = {
-  access_token: 'access-token',
+  access_token: testAuthToken('logout'),
   token_type: 'Bearer',
   access_expires_at: 1_900_000_000,
   user: { id: 1, username: 'test-user', role: 1 },
