@@ -20,6 +20,7 @@ import { Link } from '@tanstack/react-router'
 import { Fragment, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useIsAdmin } from '@/hooks/use-admin'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { cn } from '@/lib/utils'
@@ -171,6 +172,8 @@ export function Footer(props: FooterProps) {
   const displayName = systemName || props.name || 'New API'
   const isDemoSiteMode = Boolean(demoSiteEnabled)
   const currentYear = new Date().getFullYear()
+  // C2C platform links (contributor / market / health) are admin-only.
+  const isAdmin = useIsAdmin()
 
   const fallbackColumns = useMemo<FooterColumnProps[]>(
     () => [
@@ -276,17 +279,19 @@ export function Footer(props: FooterProps) {
             <p className='text-muted-foreground/60 mt-3 max-w-[200px] text-xs leading-relaxed'>
               {t('Powerful API Management Platform')}
             </p>
-            <div className='mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5'>
-              {PLATFORM_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className='text-muted-foreground hover:text-foreground text-sm transition-colors duration-200'
-                >
-                  {t(link.text)}
-                </Link>
-              ))}
-            </div>
+            {isAdmin && (
+              <div className='mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5'>
+                {PLATFORM_LINKS.map((link) => (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className='text-muted-foreground hover:text-foreground text-sm transition-colors duration-200'
+                  >
+                    {t(link.text)}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Links columns */}

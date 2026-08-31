@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useStatus } from '@/hooks/use-status'
 import { parseHeaderNavModulesFromStatus } from '@/lib/nav-modules'
+import { ROLE } from '@/lib/roles'
 import { useAuthStore } from '@/stores/auth-store'
 
 export type TopNavLink = {
@@ -60,6 +61,10 @@ export function useTopNavLinks(): TopNavLink[] {
 
   const isAuthed = !!auth?.user
 
+  // Admin-level visibility gate (same convention as useIsAdmin / dashboard:
+  // role >= ROLE.ADMIN, i.e. admin (10) and root (100)).
+  const isAdmin = (auth?.user?.role ?? 0) >= ROLE.ADMIN
+
   const links: TopNavLink[] = []
 
   // Home
@@ -86,8 +91,9 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Rankings'), href: '/rankings', requiresAuth })
   }
 
-  // Docs (supports external links)
-  if (modules?.docs !== false) {
+  // Docs (supports external links). Hidden from non-admin users; the backend
+  // HeaderNavModules `docs` key still applies for admins (both must pass).
+  if (isAdmin && modules?.docs !== false) {
     if (docsLink) {
       links.push({ title: t('Docs'), href: docsLink, external: true })
     } else {
@@ -101,15 +107,16 @@ export function useTopNavLinks(): TopNavLink[] {
   }
 
   // C2C platform pages (contributor program / model market / channel health).
-  // Default to visible; the backend HeaderNavModules JSON can hide them with
-  // `contributor/market/health: false`.
-  if (modules?.contributor !== false) {
+  // Admin-only: guests and regular users never see them. The backend
+  // HeaderNavModules JSON (`contributor/market/health: false`) can still hide
+  // them for admins (both conditions must pass).
+  if (isAdmin && modules?.contributor !== false) {
     links.push({ title: t('Contributor Program'), href: '/contributor' })
   }
-  if (modules?.market !== false) {
+  if (isAdmin && modules?.market !== false) {
     links.push({ title: t('Model Market'), href: '/market' })
   }
-  if (modules?.health !== false) {
+  if (isAdmin && modules?.health !== false) {
     links.push({ title: t('Channel Health'), href: '/health' })
   }
 
