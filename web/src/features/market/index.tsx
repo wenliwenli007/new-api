@@ -30,6 +30,7 @@ import {
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useStatus } from '@/hooks/use-status'
 import { PublicLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -54,33 +55,52 @@ import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
 import { usePricingData } from '@/features/pricing/hooks'
 import type { PricingModel } from '@/features/pricing/types'
 
-const CNY_PER_USD = 7.2
+import {
+  computeDisplayedPrice,
+  getOfficialPrice,
+  type OfficialTokenPrice,
+} from './official-pricing'
+
 const DEFAULT_GROUP = 'default'
 
 type ComputedPrices = {
   input: number
   output: number | null
   perRequest: boolean
+  official: OfficialTokenPrice | undefined
+  effectiveOfficialMultiplier: number | null
 }
 
-/**
- * Unified CNY pricing basis (per million tokens):
- * input = model_ratio × 2 × 7.2, output = input × completion_ratio.
- * Per-request models are billed model_price × 7.2 per call.
- */
-function computePrices(model: PricingModel): ComputedPrices {
+/** Compute display prices using the live USD exchange rate. */
+function computePrices(model: PricingModel, usdExchangeRate: number | undefined): ComputedPrices {
+  const official = getOfficialPrice(model.model_name)
   if (model.quota_type === QUOTA_TYPE_VALUES.REQUEST) {
     return {
-      input: (model.model_price || 0) * CNY_PER_USD,
+      input:
+        typeof usdExchangeRate === 'number' && usdExchangeRate > 0
+          ? (model.model_price || 0) * usdExchangeRate
+          : Number.NaN,
       output: null,
       perRequest: true,
+      official: undefined,
+      effectiveOfficialMultiplier: null,
     }
   }
-  const input = (model.model_ratio || 0) * 2 * CNY_PER_USD
+  const modelRatio = model.model_ratio || 0
+  const completionRatio = model.completion_ratio || 1
+  const validRate =
+    typeof usdExchangeRate === 'number' &&
+    Number.isFinite(usdExchangeRate) &&
+    usdExchangeRate > 0
+  const displayed = official && validRate
+    ? computeDisplayedPrice(modelRatio, completionRatio, usdExchangeRate, official)
+    : null
   return {
-    input,
-    output: input * (model.completion_ratio || 1),
+    input: validRate ? modelRatio * 2 * usdExchangeRate : Number.NaN,
+    output: validRate ? modelRatio * 2 * completionRatio * usdExchangeRate : Number.NaN,
     perRequest: false,
+    official,
+    effectiveOfficialMultiplier: displayed?.effectiveOfficialMultiplier ?? null,
   }
 }
 
@@ -90,12 +110,36 @@ function formatCny(value: number): string {
   return `¥${value.toFixed(digits)}`
 }
 
+function formatUsd(value: number): string {
+  if (!Number.isFinite(value)) return '-'
+  return `$${value.toFixed(value < 0.01 ? 4 : 2)}`
+}
+
+function formatMultiplier(value: number): string {
+  return Number.isFinite(value) ? `${value.toFixed(2)}×` : '—'
+}
+
+function renderOutputPrice(
+  output: number | null,
+  hasExchangeRate: boolean,
+  missingRateLabel: string
+) {
+  if (output === null) return <span className='text-muted-foreground'>—</span>
+  return hasExchangeRate ? formatCny(output) : missingRateLabel
+}
+
 const SKELETON_ROWS = ['row-a', 'row-b', 'row-c']
 const SKELETON_CELLS = ['model', 'input', 'output', 'mode', 'failover']
 
 export function ModelMarket() {
   const { t } = useTranslation()
   const { models, isLoading, error, refetch } = usePricingData()
+  const { status } = useStatus()
+  const usdExchangeRate = status?.usd_exchange_rate
+  const hasExchangeRate =
+    typeof usdExchangeRate === 'number' &&
+    Number.isFinite(usdExchangeRate) &&
+    usdExchangeRate > 0
 
   const defaultGroupModels = useMemo(
     () =>
@@ -148,7 +192,10 @@ export function ModelMarket() {
     }
 
     return defaultGroupModels.map((model) => {
-      const prices = computePrices(model)
+      const prices = computePrices(model, usdExchangeRate)
+      const finalPrice = hasExchangeRate
+        ? `${formatCny(prices.input)} / ${formatCny(prices.output ?? 0)}`
+        : t('marketPage.exchangeRateMissing')
       return (
         <TableRow key={model.model_name}>
           <TableCell>
@@ -158,9 +205,50 @@ export function ModelMarket() {
                 {model.vendor_name}
               </div>
             )}
+            {!prices.perRequest && (
+              <div className='text-muted-foreground mt-2 space-y-1 text-xs'>
+                {prices.official ? (
+                  <>
+                    <div>
+                      {t('marketPage.officialPeakPrice')}:{' '}
+                      {formatUsd(prices.official.inputUsdPerMillion)} /{' '}
+                      {formatUsd(prices.official.outputUsdPerMillion)} / M
+                    </div>
+                    <div>
+                      {t('marketPage.systemMultiplier')}: {formatMultiplier(model.model_ratio)}
+                    </div>
+                    <div>
+                      {t('marketPage.effectiveOfficialMultiplier')}:{' '}
+                      {prices.effectiveOfficialMultiplier == null
+                        ? '—'
+                        : formatMultiplier(prices.effectiveOfficialMultiplier)}
+                    </div>
+                    <div>
+                      {t('marketPage.finalPrice')}: {finalPrice}
+                    </div>
+                    <div>
+                      {t('marketPage.officialPriceSource')}: {' '}
+                      <a
+                        href={prices.official.sourceUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='underline underline-offset-2'
+                      >
+                        {prices.official.sourceUrl}
+                      </a>
+                    </div>
+                    <div>
+                      {t('marketPage.priceVerifiedOn')}: {prices.official.verifiedOn}
+                    </div>
+                  </>
+                ) : (
+                  <div>{t('marketPage.officialPriceNotConfigured')}</div>
+                )}
+              </div>
+            )}
           </TableCell>
           <TableCell className='font-medium tabular-nums'>
-            {formatCny(prices.input)}
+            {hasExchangeRate ? formatCny(prices.input) : t('marketPage.exchangeRateMissing')}
             <span className='text-muted-foreground/60 ml-1 text-xs'>
               /{' '}
               {prices.perRequest
@@ -169,10 +257,10 @@ export function ModelMarket() {
             </span>
           </TableCell>
           <TableCell className='font-medium tabular-nums'>
-            {prices.output === null ? (
-              <span className='text-muted-foreground'>—</span>
-            ) : (
-              formatCny(prices.output)
+            {renderOutputPrice(
+              prices.output,
+              hasExchangeRate,
+              t('marketPage.exchangeRateMissing')
             )}
           </TableCell>
           <TableCell>
