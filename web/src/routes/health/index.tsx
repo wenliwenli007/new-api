@@ -16,22 +16,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 
 import { ChannelHealth } from '@/features/health'
-import { ROLE } from '@/lib/roles'
-import { useAuthStore } from '@/stores/auth-store'
 
 export const Route = createFileRoute('/health/')({
-  // Admin-only page: guests and regular users are redirected to home.
-  beforeLoad: () => {
-    const { auth } = useAuthStore.getState()
-
-    if (!auth.user || auth.user.role < ROLE.ADMIN) {
-      throw redirect({
-        to: '/',
-      })
-    }
-  },
+  // Public page: channel health status is visible to everyone.
   component: ChannelHealth,
 })
