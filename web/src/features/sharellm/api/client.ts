@@ -27,16 +27,14 @@ import type {
 } from '../types/market'
 import type { AddRouteInput, ConsumerRoute } from '../types/route'
 import type { CredentialView, ProbeResult } from '../types/credential'
+import { sharellmMock } from '../types/surfaces'
 import type {
   CallLogPage,
   EarningSummary,
   HealthSummary,
   RankingItem,
   RankingMetric,
-  sharellmMock,
 } from '../types/surfaces'
-
-type MockSurface = typeof sharellmMock
 
 // Single data entry point for ShareLLM pages. While USE_MOCK is true every
 // call resolves local seed data; switching to the real backend only requires
