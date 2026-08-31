@@ -91,8 +91,7 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Rankings'), href: '/rankings', requiresAuth })
   }
 
-  // Docs (supports external links). Hidden from non-admin users; the backend
-  // HeaderNavModules `docs` key still applies for admins (both must pass).
+  // Docs: admin-only (backend `docs` key still applies for admins).
   if (isAdmin && modules?.docs !== false) {
     if (docsLink) {
       links.push({ title: t('Docs'), href: docsLink, external: true })
@@ -101,22 +100,21 @@ export function useTopNavLinks(): TopNavLink[] {
     }
   }
 
-  // About: keep hidden from guests and regular users until the content is revised.
-  if (isAdmin && modules?.about !== false) {
+  // About: public landing content (requiresAuth handled by route guard if any).
+  if (modules?.about !== false) {
     links.push({ title: t('About'), href: '/about' })
   }
 
-  // C2C platform pages (contributor program / model market / channel health).
-  // Admin-only: guests and regular users never see them. The backend
-  // HeaderNavModules JSON (`contributor/market/health: false`) can still hide
-  // them for admins (both conditions must pass).
-  if (isAdmin && modules?.contributor !== false) {
+  // C2C platform pages (contributor program / model market / channel health):
+  // public for guests and regular users. The backend HeaderNavModules JSON
+  // (`contributor/market/health: false`) can still hide them entirely.
+  if (modules?.contributor !== false) {
     links.push({ title: t('Contributor Program'), href: '/contributor' })
   }
-  if (isAdmin && modules?.market !== false) {
+  if (modules?.market !== false) {
     links.push({ title: t('Model Market'), href: '/market' })
   }
-  if (isAdmin && modules?.health !== false) {
+  if (modules?.health !== false) {
     links.push({ title: t('Channel Health'), href: '/health' })
   }
 
