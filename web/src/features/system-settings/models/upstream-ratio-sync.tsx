@@ -29,6 +29,7 @@ import {
   getUpstreamChannels,
   updateSystemOption,
 } from '../api'
+import { api } from '@/lib/api'
 import type {
   DifferencesMap,
   RatioType,
@@ -474,6 +475,37 @@ export function UpstreamRatioSync({ modelRatios }: UpstreamRatioSyncProps) {
   const hasSelections = Object.keys(resolutions).length > 0
   const isLoading = fetchMutation.isPending || isSyncPending || confirmLoading
 
+  // 需求 A：把当前全局倍率表一键导入官方基准价表（official_pricing），
+  // 供渠道编辑页倍率联动与市场页官方价展示使用。
+  const officialImportMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post<{ success: boolean; message?: string; data?: { imported: number } }>(
+        '/api/official_pricing/import',
+        {
+          models: [],
+          source_preset: 'ratio_sync',
+        }
+      )
+      return res.data
+    },
+    onSuccess: (data) => {
+      if (data?.success) {
+        toast.success(
+          t('已导入 {{count}} 个模型的官方基准价', {
+            count: data?.data?.imported ?? 0,
+          })
+        )
+        queryClient.invalidateQueries({ queryKey: ['official-pricing-status'] })
+        queryClient.invalidateQueries({ queryKey: ['status'] })
+      } else {
+        toast.error(data?.message ?? t('导入官方基准价失败'))
+      }
+    },
+    onError: (err) => {
+      toast.error(err?.message ?? t('导入官方基准价失败'))
+    },
+  })
+
   return (
     <div className='flex h-full min-h-0 flex-col gap-4'>
       <div className='flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
@@ -492,6 +524,20 @@ export function UpstreamRatioSync({ modelRatios }: UpstreamRatioSyncProps) {
             )}
             <CheckSquare className='mr-2 h-4 w-4' />
             {t('Apply Sync')}
+          </Button>
+          <Button
+            variant='outline'
+            onClick={() => officialImportMutation.mutate()}
+            disabled={officialImportMutation.isPending || isLoading}
+            title={t(
+              '按当前全局倍率表生成官方基准价（USD/1M），供渠道定价联动与市场页展示'
+            )}
+          >
+            {officialImportMutation.isPending && (
+              <span className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
+            )}
+            <span className='mr-1'>¥</span>
+            {t('导入官方基准价')}
           </Button>
         </div>
       </div>

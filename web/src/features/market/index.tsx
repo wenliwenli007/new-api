@@ -31,6 +31,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useStatus } from '@/hooks/use-status'
+import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
 import { PublicLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -60,8 +61,26 @@ import {
   getOfficialPrice,
   type OfficialTokenPrice,
 } from './official-pricing'
+import type { OfficialPricingEntry } from '@/features/channels/components/pricing/types'
 
 const DEFAULT_GROUP = 'default'
+
+/** 线上官方价快照（official_pricing）→ 市场页 OfficialTokenPrice。
+ *  快照缺失时回落到版本化前端配置（旧 official-pricing.ts）。 */
+function officialFromSnapshot(
+  entry: OfficialPricingEntry | undefined,
+  fallback: OfficialTokenPrice | undefined
+): OfficialTokenPrice | undefined {
+  if (!entry || !(entry.input > 0)) return fallback
+  return {
+    version: entry.verified_on ?? fallback?.version ?? '',
+    model: '',
+    inputUsdPerMillion: entry.input,
+    outputUsdPerMillion: entry.output,
+    sourceUrl: entry.source_url ?? fallback?.sourceUrl ?? '',
+    verifiedOn: entry.verified_on ?? '',
+  }
+}
 
 type ComputedPrices = {
   input: number
@@ -72,8 +91,15 @@ type ComputedPrices = {
 }
 
 /** Compute display prices using the live USD exchange rate. */
-function computePrices(model: PricingModel, usdExchangeRate: number | undefined): ComputedPrices {
-  const official = getOfficialPrice(model.model_name)
+function computePrices(
+  model: PricingModel,
+  usdExchangeRate: number | undefined,
+  officialSnapshot: Record<string, OfficialPricingEntry> = {}
+): ComputedPrices {
+  const official = officialFromSnapshot(
+    officialSnapshot[model.model_name?.toLowerCase?.()],
+    getOfficialPrice(model.model_name)
+  )
   if (model.quota_type === QUOTA_TYPE_VALUES.REQUEST) {
     return {
       input:
@@ -135,6 +161,7 @@ export function ModelMarket() {
   const { t } = useTranslation()
   const { models, isLoading, error, refetch } = usePricingData()
   const { status } = useStatus()
+  const { officialPricing } = useOfficialPricing()
   const usdExchangeRate = status?.usd_exchange_rate
   const hasExchangeRate =
     typeof usdExchangeRate === 'number' &&
@@ -192,7 +219,7 @@ export function ModelMarket() {
     }
 
     return defaultGroupModels.map((model) => {
-      const prices = computePrices(model, usdExchangeRate)
+      const prices = computePrices(model, usdExchangeRate, officialPricing)
       const finalPrice = hasExchangeRate
         ? `${formatCny(prices.input)} / ${formatCny(prices.output ?? 0)}`
         : t('marketPage.exchangeRateMissing')

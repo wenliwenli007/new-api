@@ -189,6 +189,19 @@ import { ParamOverrideEditorDialog } from '../dialogs/param-override-editor-dial
 import { StatusCodeRiskDialog } from '../dialogs/status-code-risk-dialog'
 import { ModelMappingEditor } from '../model-mapping-editor'
 import {
+  ChannelPricingSection,
+  type ChannelModelPricing,
+  type PricingMode,
+} from '../pricing/channel-pricing-section'
+import { useOfficialPricing } from '../../hooks/use-official-pricing'
+import {
+  applyChannelPricing,
+  buildWritebackPlan,
+  parseRatioRecord,
+} from '../../hooks/channel-pricing-writeback'
+import { getSystemOptions } from '@/features/system-settings/api'
+import { useSystemConfigStore } from '@/stores/system-config-store'
+import {
   ChannelAdvancedSection,
   ChannelApiAccessSection,
   ChannelAuthSection,
@@ -929,6 +942,29 @@ export function ChannelMutateDrawer({
   const currentModelsArray = useMemo(
     () => parseModelsString(currentModels),
     [currentModels]
+  )
+
+  // ── 各渠道模型价格（需求 B）：官方基准价 + 倍率联动四价 ──
+  const { officialPricing } = useOfficialPricing()
+  const [channelPricing, setChannelPricing] = useState<
+    Record<string, ChannelModelPricing>
+  >({})
+  const [channelPricingModes, setChannelPricingModes] = useState<
+    Record<string, PricingMode>
+  >({})
+
+  const handleChannelPricingChange = useCallback(
+    (model: string, next: ChannelModelPricing) => {
+      setChannelPricing((prev) => ({ ...prev, [model]: next }))
+    },
+    []
+  )
+
+  const handleChannelPricingModeChange = useCallback(
+    (model: string, mode: PricingMode) => {
+      setChannelPricingModes((prev) => ({ ...prev, [model]: mode }))
+    },
+    []
   )
 
   const currentTypeLabel = useMemo(
@@ -1741,6 +1777,40 @@ export function ChannelMutateDrawer({
       }
 
       await channelMutation.mutateAsync(data)
+
+      // ── 各渠道模型价格写回（需求 B）：渠道保存成功后，
+      //    把本次配置过的模型定价换算写进全局倍率表。 ──
+      const pricedModels = Object.values(channelPricing).some(
+        (entry) =>
+          entry &&
+          (entry.input ?? 0) > 0
+      )
+      if (pricedModels) {
+        const currency = useSystemConfigStore.getState().config.currency
+        const plan = buildWritebackPlan(
+          channelPricing,
+          channelPricingModes,
+          currency.usdExchangeRate
+        )
+        if (Object.keys(plan.modelRatio).length > 0 || Object.keys(plan.modelPrice).length > 0) {
+          // 拉当前全局倍率表原值，仅写有变动的模型（防误清全表）。
+          const optionsResponse = await getSystemOptions()
+          const optionsIndex: Record<string, string> = {}
+          for (const option of optionsResponse?.data ?? []) {
+            if (option?.key) optionsIndex[option.key] = option.value
+          }
+          const result = await applyChannelPricing(plan, {
+            modelRatio: parseRatioRecord(optionsIndex.ModelRatio),
+            completionRatio: parseRatioRecord(optionsIndex.CompletionRatio),
+            cacheRatio: parseRatioRecord(optionsIndex.CacheRatio),
+            createCacheRatio: parseRatioRecord(optionsIndex.CreateCacheRatio),
+            modelPrice: parseRatioRecord(optionsIndex.ModelPrice),
+          })
+          if (result.applied) {
+            toast.success(t('模型价格已换算写入全局倍率表'))
+          }
+        }
+      }
     },
     [
       isEditing,
@@ -1749,6 +1819,8 @@ export function ChannelMutateDrawer({
       confirmMissingModelMappings,
       confirmStatusCodeRisk,
       channelMutation,
+      channelPricing,
+      channelPricingModes,
       t,
     ]
   )
@@ -3704,6 +3776,25 @@ export function ChannelMutateDrawer({
                                   <FormMessage />
                                 </FormItem>
                               )}
+                            />
+                          </div>
+
+                          {/* ── 各渠道模型价格（需求 B）── */}
+                          <div className='border-border/60 bg-muted/10 space-y-3 rounded-lg border p-4'>
+                            <CardHeading
+                              title={t('各渠道模型价格')}
+                              icon={<span className='text-sm'>¥</span>}
+                              iconTone='chart-4'
+                            />
+                            <p className='text-muted-foreground text-xs'>
+                              {t('价格以人民币保存；保存时自动换算回全局倍率表。')}
+                            </p>
+                            <ChannelPricingSection
+                              models={currentModelsArray}
+                              officialPricing={officialPricing}
+                              value={channelPricing}
+                              onChange={handleChannelPricingChange}
+                              onModeChange={handleChannelPricingModeChange}
                             />
                           </div>
                         </div>

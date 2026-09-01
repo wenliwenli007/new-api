@@ -10,6 +10,7 @@ import (
 	"github.com/QuantumNous/new-api/pkg/jsplugin"
 	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/setting/config"
+	"github.com/QuantumNous/new-api/setting/officialprice"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/performance_setting"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
@@ -655,6 +656,12 @@ func handleConfigUpdate(key, value string) bool {
 	config.UpdateConfigFromMap(cfg, configMap)
 
 	// 特定配置的后处理
+	if configName == "official_pricing" {
+		// 官方基准价表更新后立即重建内存索引；解析失败保留旧数据。
+		if err := officialprice.Reload(officialprice.GetConfig().PricesJSON); err != nil {
+			common.SysError("official_pricing reload failed: " + err.Error())
+		}
+	}
 	if configName == "performance_setting" {
 		performance_setting.UpdateAndSync()
 	} else if configName == "billing_setting" {
