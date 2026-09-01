@@ -94,6 +94,36 @@ const STATUS = {
       market: true,
       health: true,
     },
+    // 货币口径与官方价快照（渠道定价节/市场页走查数据源）
+    usd_exchange_rate: 7.2,
+    price: 7.2,
+    quota_display_type: 'CNY',
+    custom_currency_symbol: '¥',
+    custom_currency_exchange_rate: 7.2,
+    official_pricing: [
+      {
+        model: 'deepseek-v4-flash',
+        price: {
+          input: 0.44,
+          output: 1.32,
+          cached_input: 0.02,
+          cache_write: 0.44,
+          source_preset: '官方倍率预设',
+          verified_on: '2026-09-01',
+        },
+      },
+      {
+        model: 'glm-5.2',
+        price: {
+          input: 0.6,
+          output: 2.0,
+          cached_input: 0.08,
+          cache_write: 0.6,
+          source_preset: '官方倍率预设',
+          verified_on: '2026-09-01',
+        },
+      },
+    ],
   },
 }
 
