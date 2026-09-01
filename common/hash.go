@@ -13,12 +13,20 @@ func Sha256Raw(data []byte) []byte {
 	return h.Sum(nil)
 }
 
+func Sha256(data []byte) string {
+	return hex.EncodeToString(Sha256Raw(data))
+}
+
+// Sha1Raw is retained for external compatibility only. New internal
+// identifiers and cache keys must use Sha256Raw instead.
 func Sha1Raw(data []byte) []byte {
 	h := sha1.New()
 	h.Write(data)
 	return h.Sum(nil)
 }
 
+// Sha1 is retained for external compatibility only. New internal identifiers
+// and cache keys must use Sha256 instead.
 func Sha1(data []byte) string {
 	return hex.EncodeToString(Sha1Raw(data))
 }

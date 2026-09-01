@@ -3,9 +3,11 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -20,11 +22,95 @@ type wechatLoginResponse struct {
 	Data    string `json:"data"`
 }
 
+var blockedWeChatServerNetworks = func() []net.IPNet {
+	cidrs := []string{
+		"0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8",
+		"169.254.0.0/16", "172.16.0.0/12", "192.0.0.0/24", "192.0.2.0/24",
+		"192.168.0.0/16", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24",
+		"224.0.0.0/4", "240.0.0.0/4", "255.255.255.255/32", "::/128", "::1/128",
+		"fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32",
+	}
+	nets := make([]net.IPNet, 0, len(cidrs))
+	for _, cidr := range cidrs {
+		if _, network, err := net.ParseCIDR(cidr); err == nil {
+			nets = append(nets, *network)
+		}
+	}
+	return nets
+}()
+
+func isUnsafeWeChatServerIP(ip net.IP) bool {
+	if ip == nil || ip.IsUnspecified() || ip.IsLoopback() || ip.IsLinkLocalUnicast() ||
+		ip.IsLinkLocalMulticast() || ip.IsInterfaceLocalMulticast() || ip.IsMulticast() || ip.IsPrivate() {
+		return true
+	}
+	if v4 := ip.To4(); v4 != nil {
+		ip = v4
+	}
+	for _, network := range blockedWeChatServerNetworks {
+		if network.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+func validateWeChatServerAddress(address string) (*url.URL, error) {
+	serverURL, err := url.Parse(strings.TrimSpace(address))
+	if err != nil {
+		return nil, fmt.Errorf("微信服务器地址无效: %w", err)
+	}
+	scheme := strings.ToLower(serverURL.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return nil, errors.New("微信服务器地址只允许 http 或 https")
+	}
+	if serverURL.User != nil {
+		return nil, errors.New("微信服务器地址不允许 userinfo")
+	}
+	host := serverURL.Hostname()
+	if host == "" || serverURL.Host == "" {
+		return nil, errors.New("微信服务器地址必须包含主机")
+	}
+	port := serverURL.Port()
+	if port == "" {
+		if strings.HasSuffix(serverURL.Host, ":") {
+			return nil, errors.New("微信服务器地址端口无效")
+		}
+		port = map[string]string{"http": "80", "https": "443"}[scheme]
+	}
+	if port != "80" && port != "443" {
+		return nil, errors.New("微信服务器地址只允许 80 或 443 端口")
+	}
+	serverURL.Scheme = scheme
+	if ip := net.ParseIP(host); ip != nil {
+		if isUnsafeWeChatServerIP(ip) {
+			return nil, errors.New("微信服务器地址不允许指向本机、私网或保留地址")
+		}
+	} else {
+		ips, lookupErr := net.LookupIP(host)
+		if lookupErr != nil || len(ips) == 0 {
+			return nil, fmt.Errorf("微信服务器主机解析失败: %s", host)
+		}
+		for _, ip := range ips {
+			if isUnsafeWeChatServerIP(ip) {
+				return nil, errors.New("微信服务器地址解析到本机、私网或保留地址")
+			}
+		}
+	}
+	return serverURL, nil
+}
+
 func getWeChatIdByCode(code string) (string, error) {
 	if code == "" {
 		return "", errors.New("无效的参数")
 	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/wechat/user?code=%s", common.WeChatServerAddress, url.QueryEscape(code)), nil)
+	serverURL, err := validateWeChatServerAddress(common.WeChatServerAddress)
+	if err != nil {
+		return "", err
+	}
+	serverURL.Path = strings.TrimRight(serverURL.Path, "/") + "/api/wechat/user"
+	serverURL.RawQuery = "code=" + url.QueryEscape(code)
+	req, err := http.NewRequest("GET", serverURL.String(), nil)
 	if err != nil {
 		return "", err
 	}

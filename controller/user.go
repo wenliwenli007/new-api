@@ -27,6 +27,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const passwordValidationPlaceholder = "__password_validation_placeholder__"
+
 type LoginRequest struct {
 	Username          string `json:"username"`
 	Password          string `json:"password"`
@@ -705,7 +707,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 	if updatedUser.Password == "" {
-		updatedUser.Password = "$I_LOVE_U" // make Validator happy :)
+		updatedUser.Password = passwordValidationPlaceholder // make Validator happy :)
 	}
 	if err := common.Validate.Struct(&updatedUser); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgUserInputInvalid, map[string]any{"Error": err.Error()})
@@ -726,7 +728,7 @@ func UpdateUser(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
 		return
 	}
-	if updatedUser.Password == "$I_LOVE_U" {
+	if updatedUser.Password == passwordValidationPlaceholder {
 		updatedUser.Password = "" // rollback to what it should be
 	}
 	updatePassword := updatedUser.Password != ""
@@ -882,7 +884,7 @@ func UpdateSelf(c *gin.Context) {
 	}
 
 	if user.Password == "" {
-		user.Password = "$I_LOVE_U" // make Validator happy :)
+		user.Password = passwordValidationPlaceholder // make Validator happy :)
 	}
 	if err := common.Validate.Struct(&user); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidInput)
@@ -895,7 +897,7 @@ func UpdateSelf(c *gin.Context) {
 		Password:    user.Password,
 		DisplayName: user.DisplayName,
 	}
-	if user.Password == "$I_LOVE_U" {
+	if user.Password == passwordValidationPlaceholder {
 		user.Password = "" // rollback to what it should be
 		cleanUser.Password = ""
 	}

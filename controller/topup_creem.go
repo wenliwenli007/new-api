@@ -111,7 +111,9 @@ func (*CreemAdaptor) RequestPay(c *gin.Context, req *CreemPayRequest) {
 
 	// 生成唯一的订单引用ID
 	reference := fmt.Sprintf("creem-api-ref-%d-%d-%s", user.Id, time.Now().UnixMilli(), randstr.String(4))
-	referenceId := "ref_" + common.Sha1([]byte(reference))
+	// Creem returns request_id in webhooks. This is an opaque order
+	// identifier, so use SHA-256 while retaining the historical 40-char suffix.
+	referenceId := "ref_" + common.Sha256([]byte(reference))[:40]
 
 	// 先创建订单记录，使用产品配置的金额和充值额度
 	topUp := &model.TopUp{

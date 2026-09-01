@@ -11,13 +11,32 @@ let serverErrorLogs = [];
 const PORT = 3000;
 const DEV_FRONTEND_PORT = 5173; // Rsbuild dev server port
 
+const SAFE_LOG_FILE_NAME = /^new-api-crash-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.log$/;
+
+function resolveErrorLogPath(logDir, date = new Date()) {
+  if (typeof logDir !== 'string' || logDir.trim() === '') {
+    throw new Error('Electron logs directory is required');
+  }
+  const timestamp = date.toISOString().replace(/[:.]/g, '-');
+  const logFileName = `new-api-crash-${timestamp}.log`;
+  if (!SAFE_LOG_FILE_NAME.test(logFileName)) {
+    throw new Error('generated error log filename failed validation');
+  }
+
+  const resolvedLogDir = path.resolve(logDir);
+  const resolvedLogPath = path.resolve(resolvedLogDir, logFileName);
+  const relativePath = path.relative(resolvedLogDir, resolvedLogPath);
+  if (!relativePath || relativePath === '..' || relativePath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePath)) {
+    throw new Error('error log path escaped the Electron logs directory');
+  }
+  return resolvedLogPath;
+}
+
 // 保存日志到文件并打开
 function saveAndOpenErrorLog() {
   try {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const logFileName = `new-api-crash-${timestamp}.log`;
     const logDir = app.getPath('logs');
-    const logFilePath = path.join(logDir, logFileName);
+    const logFilePath = resolveErrorLogPath(logDir);
     
     // 确保日志目录存在
     if (!fs.existsSync(logDir)) {

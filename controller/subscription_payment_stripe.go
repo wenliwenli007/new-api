@@ -77,7 +77,9 @@ func SubscriptionRequestStripePay(c *gin.Context) {
 	}
 
 	reference := fmt.Sprintf("sub-stripe-ref-%d-%d-%s", user.Id, time.Now().UnixMilli(), randstr.String(4))
-	referenceId := "sub_ref_" + common.Sha1([]byte(reference))
+	// Stripe returns client_reference_id in webhooks. This is an opaque order
+	// identifier, so use SHA-256 while retaining the historical 40-char suffix.
+	referenceId := "sub_ref_" + common.Sha256([]byte(reference))[:40]
 
 	payLink, err := genStripeSubscriptionLink(referenceId, user.StripeCustomer, user.Email, plan.StripePriceId)
 	if err != nil {

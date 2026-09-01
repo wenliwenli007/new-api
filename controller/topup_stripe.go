@@ -107,7 +107,9 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 	}
 
 	reference := fmt.Sprintf("new-api-ref-%d-%d-%s", user.Id, time.Now().UnixMilli(), randstr.String(4))
-	referenceId := "ref_" + common.Sha1([]byte(reference))
+	// Stripe returns client_reference_id in webhooks. This is an opaque order
+	// identifier, so use SHA-256 while retaining the historical 40-char suffix.
+	referenceId := "ref_" + common.Sha256([]byte(reference))[:40]
 
 	payLink, err := genStripeLink(referenceId, user.StripeCustomer, user.Email, req.Amount, req.SuccessURL, req.CancelURL)
 	if err != nil {

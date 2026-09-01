@@ -414,7 +414,7 @@ func affinityFingerprint(s string) string {
 	if s == "" {
 		return ""
 	}
-	hex := common.Sha1([]byte(s))
+	hex := common.Sha256([]byte(s))
 	if len(hex) >= 8 {
 		return hex[:8]
 	}
