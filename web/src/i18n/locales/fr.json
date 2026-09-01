@@ -5648,6 +5648,33 @@
     "Zero retention": "Aucune rétention",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "channelPricing": {
+      "sectionTitle": "各渠道模型价格",
+      "sectionDesc": "价格以人民币保存；保存时自动换算回全局倍率表。",
+      "priceRatio": "价格倍率",
+      "ratioHint": "0–10 × 官方参考价；修改时自动更新下方 token 价格",
+      "manualHint": "已手动覆盖价格 — 恢复倍率联动",
+      "rel_restore": "恢复倍率联动",
+      "inputPrice": "输入价格",
+      "cachedReadPrice": "缓存读取价格",
+      "cacheWritePrice": "缓存写入价格",
+      "outputPrice": "输出价格",
+      "perMillionTokens": "¥/1M tokens",
+      "officialBadge": "官方 {{in}} / {{cached}} / {{out}} /1M",
+      "officialMissing": "官方基准价未录入",
+      "conflictBadge": "与其他渠道定价冲突",
+      "byToken": "按 Token",
+      "perCall": "按次",
+      "perCallPrice": "每次调用价格",
+      "perCallHint": "按次计费写入 ModelPrice（优先于倍率）；人民币 × 汇率换算美元",
+      "writebackPreview": "换算回全局表：ModelRatio={{mr}} · CompletionRatio={{cr}} · CacheRatio={{cache}}",
+      "writebackToast": "模型价格已换算写入全局倍率表",
+      "selectModelsFirst": "先在上方选择模型，再配置价格。"
+    },
+    "importOfficialPricing": "导入官方基准价",
+    "importOfficialPricingDone": "已导入 {{count}} 个模型的官方基准价",
+    "importOfficialPricingFailed": "导入官方基准价失败",
+    "importOfficialPricingTip": "按当前全局倍率表生成官方基准价（USD/1M），供渠道定价联动与市场页展示"
   }
 }

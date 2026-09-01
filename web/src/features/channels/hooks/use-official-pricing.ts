@@ -48,3 +48,28 @@ export function useOfficialPricing() {
 
   return { officialPricing, isLoading: loading }
 }
+
+/**
+ * computeConflictedModels — 同一模型出现在多个启用渠道时，
+ * 渠道编辑页应提示冲突（保存只对最高优先级渠道生效）。
+ * 返回冲突模型名集合（大小写归一比较）。
+ */
+export function computeConflictedModels(
+  channels: Array<{ id: number; status: number; models: string }>,
+  currentChannelId?: number
+): Set<string> {
+  const owners = new Map<string, number>()
+  for (const channel of channels) {
+    if (!channel || channel.status !== 1 || channel.id === currentChannelId) continue
+    for (const rawName of (channel.models ?? '').split(',')) {
+      const name = rawName.trim().toLowerCase()
+      if (!name) continue
+      owners.set(name, (owners.get(name) ?? 0) + 1)
+    }
+  }
+  const conflicted = new Set<string>()
+  for (const [name, count] of owners) {
+    if (count > 0) conflicted.add(name)
+  }
+  return conflicted
+}

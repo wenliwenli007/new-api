@@ -132,6 +132,7 @@ import {
   getAllModels,
   getChannel,
   getChannelKey,
+  getChannels,
   getGroups,
   getPrefillGroups,
   getTaskPluginOptions,
@@ -193,7 +194,7 @@ import {
   type ChannelModelPricing,
   type PricingMode,
 } from '../pricing/channel-pricing-section'
-import { useOfficialPricing } from '../../hooks/use-official-pricing'
+import { useOfficialPricing, computeConflictedModels } from '../../hooks/use-official-pricing'
 import {
   applyChannelPricing,
   buildWritebackPlan,
@@ -705,6 +706,21 @@ export function ChannelMutateDrawer({
     queryKey: ['prefill_groups', 'model'],
     queryFn: () => getPrefillGroups('model'),
   })
+
+  // ── 各渠道模型价格（需求 B）：同模型多渠道冲突标记数据源 ──
+  const { data: allChannelsData } = useQuery({
+    queryKey: channelsQueryKeys.list({ p: 1, page_size: 100 }),
+    queryFn: () => getChannels({ p: 1, page_size: 100 }),
+    enabled: open,
+  })
+  const conflictedModels = useMemo(
+    () =>
+      computeConflictedModels(
+        allChannelsData?.data?.items ?? [],
+        channelId ?? undefined
+      ),
+    [allChannelsData, channelId]
+  )
 
   const { copyToClipboard } = useCopyToClipboard()
 
@@ -3792,6 +3808,7 @@ export function ChannelMutateDrawer({
                             <ChannelPricingSection
                               models={currentModelsArray}
                               officialPricing={officialPricing}
+                              conflictedModels={conflictedModels}
                               value={channelPricing}
                               onChange={handleChannelPricingChange}
                               onModeChange={handleChannelPricingModeChange}
