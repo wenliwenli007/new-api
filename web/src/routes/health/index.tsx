@@ -14,13 +14,25 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-For commercial licensing, please contact support@quantumnous.com
+For commercial licensing, please contact support@quantumnous.com.
 */
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 import { ChannelHealth } from '@/features/health'
+import { ROLE } from '@/lib/roles'
+import { useAuthStore } from '@/stores/auth-store'
 
 export const Route = createFileRoute('/health/')({
-  // Public page: channel health status is visible to everyone.
+  // 管理员专属：渠道健康页未达发布标准，暂对普通用户隐藏。
+  // 重新公开 = 删除 beforeLoad 门控并恢复导航入口。
+  beforeLoad: () => {
+    const { auth } = useAuthStore.getState()
+
+    if (!auth.user || auth.user.role < ROLE.ADMIN) {
+      throw redirect({
+        to: '/',
+      })
+    }
+  },
   component: ChannelHealth,
 })
