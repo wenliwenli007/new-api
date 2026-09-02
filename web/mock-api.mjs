@@ -149,6 +149,16 @@ const server = http.createServer((req, res) => {
       data: MOCK_BUNDLE,
     })
   }
+  // Session restore on full page load: the web client (web/src/lib/auth-session.ts)
+  // calls this on boot; without it every refresh drops the mock login session.
+  // Must satisfy isAuthBundle: token fields + user + session (all present in MOCK_BUNDLE).
+  if (req.method === 'POST' && url === '/api/user/auth/refresh') {
+    return send(res, 200, {
+      success: true,
+      message: '',
+      data: MOCK_BUNDLE,
+    })
+  }
   if (req.method === 'GET' && url === '/api/user/self') {
     return send(res, 200, { success: true, message: '', data: MOCK_USER })
   }
@@ -165,6 +175,157 @@ const server = http.createServer((req, res) => {
     return send(res, 200, {
       success: true,
       data: { default: { desc: '默认分组', ratio: 1 } },
+    })
+  }
+  // Dashboard overview: API keys list (features/keys/api.ts getApiKeys).
+  // Matches GetApiKeysResponse: items[] + total counts; empty list renders
+  // the "create first key" onboarding state instead of an error.
+  if (req.method === 'GET' && url === '/api/token/') {
+    return send(res, 200, {
+      success: true,
+      message: '',
+      data: {
+        items: [
+          {
+            id: 1,
+            user_id: 1,
+            name: 'mock-key-1',
+            created_time: now(),
+            accessed_time: now(),
+            status: 1,
+            group: 'default',
+            tags: '',
+            used_quota: 0,
+            remain_quota: 500000,
+            unlimited_quota: true,
+            models: '',
+            subnet: '',
+          },
+        ],
+        total: 1,
+        page: 1,
+        page_size: 10,
+        // Shape mirrors new-api's paged response extras.
+        start_timestamp: now() - 86400,
+        end_timestamp: now(),
+      },
+    })
+  }
+  // Public pricing page (features/pricing/api.ts getPricing) — shares the same
+  // seed models as the market mock (features/sharellm/mock/market.ts) so the
+  // prototype shows data on /pricing without the admin-gated /market.
+  if (req.method === 'GET' && url === '/api/pricing') {
+    const pricingModel = (id, model_name, vendor_name, model_ratio, completion_ratio) => ({
+      id,
+      model_name,
+      vendor_name,
+      vendor_id: id,
+      quota_type: 0,
+      model_ratio,
+      completion_ratio,
+      cache_ratio: model_ratio * 0.1,
+      create_cache_ratio: model_ratio,
+      enable_groups: ['default'],
+      tags: '',
+      supported_endpoint_types: ['openai'],
+    })
+    return send(res, 200, {
+      success: true,
+      message: '',
+      data: [
+        pricingModel(1, 'deepseek-v4-flash', 'DeepSeek', 0.31, 1),
+        pricingModel(2, 'deepseek-v4-pro', 'DeepSeek', 0.92, 3),
+        pricingModel(3, 'glm-5.2', 'Zhipu', 0.3, 3.33),
+        pricingModel(4, 'gpt-5.6-luna', 'OpenAI', 0.07, 6),
+        pricingModel(5, 'gpt-5.6-sol', 'OpenAI', 0.165, 6.06),
+        pricingModel(6, 'grok-4.5', 'xAI', 0.004, 0.3),
+      ],
+      vendors: [
+        { id: 1, vendor_name: 'DeepSeek', description: '' },
+        { id: 3, vendor_name: 'Zhipu', description: '' },
+        { id: 4, vendor_name: 'OpenAI', description: '' },
+        { id: 6, vendor_name: 'xAI', description: '' },
+      ],
+      group_ratio: { default: 1 },
+      usable_group: { default: { desc: '默认分组', ratio: 1 } },
+      supported_endpoint: { openai: 'OpenAI' },
+      auto_groups: [],
+    })
+  }
+  // Dashboard overview panels (features/dashboard/api.ts + performance-metrics/api.ts).
+  // Usage trend sparkline: QuotaDataItem[] keyed by hour over the last 24h.
+  if (req.method === 'GET' && (url === '/api/data/self' || url === '/api/data')) {
+    const hours = 24
+    const items = Array.from({ length: hours }, (_, i) => {
+      const created_at = now() - (hours - 1 - i) * 3600
+      const count = Math.floor(20 + 40 * Math.abs(Math.sin(i)))
+      return {
+        id: i + 1,
+        user_id: 1,
+        username: 'founder',
+        model_name: 'deepseek-v4-flash',
+        created_at,
+        token_used: count * 1200,
+        count,
+        quota: count * 300,
+      }
+    })
+    return send(res, 200, { success: true, message: '', data: items })
+  }
+  // Performance health panel: PerfModelSummary[] (avg_latency_ms in ms, success_rate 0-1).
+  if (req.method === 'GET' && url === '/api/perf-metrics/summary') {
+    return send(res, 200, {
+      success: true,
+      message: '',
+      data: {
+        models: [
+          {
+            model_name: 'deepseek-v4-flash',
+            avg_latency_ms: 1920,
+            success_rate: 1,
+            avg_tps: 35.9,
+            request_count: 128,
+          },
+          {
+            model_name: 'glm-5.2',
+            avg_latency_ms: 3520,
+            success_rate: 0.998,
+            avg_tps: 28.2,
+            request_count: 96,
+          },
+          {
+            model_name: 'gpt-5.6-luna',
+            avg_latency_ms: 8000,
+            success_rate: 1,
+            avg_tps: 19.5,
+            request_count: 42,
+          },
+        ],
+      },
+    })
+  }
+  // Uptime panel: UptimeGroupResult[] (uptime 0-1, status 0=down 1=up).
+  if (req.method === 'GET' && url === '/api/uptime/status') {
+    return send(res, 200, {
+      success: true,
+      message: '',
+      data: [
+        {
+          categoryName: '上游渠道',
+          monitors: [
+            { name: 'DeepSeek 官方', uptime: 0.999, status: 1 },
+            { name: 'SiliconFlow', uptime: 0.992, status: 1 },
+            { name: 'sensenova', uptime: 0.998, status: 1 },
+          ],
+        },
+        {
+          categoryName: '平台服务',
+          monitors: [
+            { name: 'API 网关', uptime: 1, status: 1 },
+            { name: '计费引擎', uptime: 0.997, status: 1 },
+          ],
+        },
+      ],
     })
   }
   if (req.method === 'GET' && url === '/api/user/2fa/status') {
