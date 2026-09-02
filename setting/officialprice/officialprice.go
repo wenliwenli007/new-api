@@ -34,7 +34,16 @@ import (
 	"github.com/QuantumNous/new-api/setting/config"
 )
 
-// OfficialPrice 单个模型的官方基准价（USD/1M tokens）。
+// OfficialPrice 单个模型的官方基准价。
+//
+// 计价口径由 Region 决定（方案 B，2026-09-02 创始人拍板）：
+//   - domestic（国内参照系）：价格已是人民币口径（各厂国内官网价，
+//     如 platform.moonshot.cn / open.bigmodel.cn / api-docs.deepseek.com）。
+//     Input/Output 单位为 ¥/1M tokens；展示端不乘汇率，直接显示。
+//   - international（国际参照系）：价格是美元口径（models.dev 等源，
+//     对应各厂国际版官网）。单位 $/1M；展示端乘 usd_exchange_rate。
+//
+// 空值默认按 international 处理（兼容历史数据）。
 type OfficialPrice struct {
 	Input        float64 `json:"input"`
 	Output       float64 `json:"output"`
@@ -43,6 +52,13 @@ type OfficialPrice struct {
 	SourceURL    string  `json:"source_url,omitempty"`
 	SourcePreset string  `json:"source_preset,omitempty"`
 	VerifiedOn   string  `json:"verified_on,omitempty"`
+	// Region 官方价参照系：domestic | international（空=international）。
+	Region string `json:"region,omitempty"`
+}
+
+// IsDomestic 该记录是否国内人民币口径。
+func (p OfficialPrice) IsDomestic() bool {
+	return strings.EqualFold(strings.TrimSpace(p.Region), "domestic")
 }
 
 // Config 以 JSON 字符串存于 options 表（键 official_pricing.*），

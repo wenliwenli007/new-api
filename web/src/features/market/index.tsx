@@ -61,12 +61,17 @@ import {
   getOfficialPrice,
   type OfficialTokenPrice,
 } from './official-pricing'
-import type { OfficialPricingEntry } from '@/features/channels/components/pricing/types'
+import {
+  isDomesticPrice,
+  type OfficialPricingEntry,
+} from '@/features/channels/components/pricing/types'
 
 const DEFAULT_GROUP = 'default'
 
 /** 线上官方价快照（official_pricing）→ 市场页 OfficialTokenPrice。
- *  快照缺失时回落到版本化前端配置（旧 official-pricing.ts）。 */
+ *  方案 B 参照系：domestic 记录已是 ¥/1M，标记为已换算（不再乘汇率）；
+ *  international（含空值）保持美元口径由 computeDisplayedPrice 乘汇率。
+ *  快照缺失时回落到版本化前端配置（旧 official-pricing.ts，美元口径）。 */
 function officialFromSnapshot(
   entry: OfficialPricingEntry | undefined,
   fallback: OfficialTokenPrice | undefined
@@ -79,6 +84,8 @@ function officialFromSnapshot(
     outputUsdPerMillion: entry.output,
     sourceUrl: entry.source_url ?? fallback?.sourceUrl ?? '',
     verifiedOn: entry.verified_on ?? '',
+    // 国内参照系标记：下游换算与展示用。
+    domesticRegion: isDomesticPrice(entry),
   }
 }
 
@@ -238,8 +245,9 @@ export function ModelMarket() {
                   <>
                     <div>
                       {t('marketPage.officialPeakPrice')}:{' '}
-                      {formatUsd(prices.official.inputUsdPerMillion)} /{' '}
-                      {formatUsd(prices.official.outputUsdPerMillion)} / M
+                      {prices.official.domesticRegion
+                        ? `${formatCny(prices.official.inputUsdPerMillion)} / ${formatCny(prices.official.outputUsdPerMillion)} / M（${t('marketPage.regionDomestic')}）`
+                        : `${formatUsd(prices.official.inputUsdPerMillion)} / ${formatUsd(prices.official.outputUsdPerMillion)} / M（${t('marketPage.regionInternational')}）`}
                     </div>
                     <div>
                       {t('marketPage.systemMultiplier')}: {formatMultiplier(model.model_ratio)}
@@ -253,17 +261,19 @@ export function ModelMarket() {
                     <div>
                       {t('marketPage.finalPrice')}: {finalPrice}
                     </div>
-                    <div>
-                      {t('marketPage.officialPriceSource')}: {' '}
-                      <a
-                        href={prices.official.sourceUrl}
-                        target='_blank'
-                        rel='noreferrer'
-                        className='underline underline-offset-2'
-                      >
-                        {prices.official.sourceUrl}
-                      </a>
-                    </div>
+                    {prices.official.sourceUrl && (
+                      <div>
+                        {t('marketPage.officialPriceSource')}: {' '}
+                        <a
+                          href={prices.official.sourceUrl}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='underline underline-offset-2'
+                        >
+                          {prices.official.sourceUrl}
+                        </a>
+                      </div>
+                    )}
                     <div>
                       {t('marketPage.priceVerifiedOn')}: {prices.official.verifiedOn}
                     </div>

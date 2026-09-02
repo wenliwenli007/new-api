@@ -15,7 +15,12 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-/** official_pricing 后端快照的单条记录（USD/1M）。 */
+/**
+ * official_pricing 后端快照的单条记录。
+ * 金额口径由 region 决定（方案 B）：
+ *  - domestic：¥/1M（各厂国内官网价），展示时不乘汇率
+ *  - international（含空值）：$/M（国际版官网价），展示时乘 usd_exchange_rate
+ */
 export type OfficialPricingEntry = {
   input: number
   output: number
@@ -24,9 +29,15 @@ export type OfficialPricingEntry = {
   source_url?: string
   source_preset?: string
   verified_on?: string
+  region?: 'domestic' | 'international' | string
 }
 
 export type OfficialPricingSnapshotItem = {
   model: string
   price: OfficialPricingEntry
+}
+
+/** 该记录是否国内人民币口径。 */
+export function isDomesticPrice(entry: OfficialPricingEntry): boolean {
+  return (entry.region ?? '').trim().toLowerCase() === 'domestic'
 }

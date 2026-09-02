@@ -5,6 +5,12 @@ export type OfficialTokenPrice = {
   outputUsdPerMillion: number
   sourceUrl: string
   verifiedOn: string
+  /**
+   * 方案 B 参照系：true = 该官方价已是国内官网人民币口径（¥/1M），
+   * 展示时不乘汇率、相对倍率直接按人民币口径计算。
+   * 缺省 false = 美元口径（国际官网），乘 usd_exchange_rate 展示。
+   */
+  domesticRegion?: boolean
 }
 
 export type DisplayedPrice = {
@@ -13,6 +19,11 @@ export type DisplayedPrice = {
   systemInputCny: number
   systemOutputCny: number
   effectiveOfficialMultiplier: number
+  /** 官方基准价的展示口径（¥/1M）：domestic 记录原值，international 乘汇率。 */
+  officialInputCny: number
+  officialOutputCny: number
+  /** 官方价参照系标签（用于 UI 展示"国内官网/国际官网"）。 */
+  officialRegion: 'domestic' | 'international'
 }
 
 /** Official peak token prices, in USD per million tokens. */
@@ -78,8 +89,21 @@ export function computeDisplayedPrice(
   const systemOutputCny = systemOutputUsd * usdExchangeRate
   if (!Number.isFinite(systemOutputCny)) return null
 
-  const effectiveOfficialMultiplier =
-    systemInputUsd / officialPrice.inputUsdPerMillion
+  // 方案 B：官方价展示口径按参照系分支。
+  // domestic：官方价已是 ¥/1M，原值展示；
+  // international：官方价 $/M × 汇率。
+  // 相对倍率两种口径下均按"系统卖价 ÷ 官方基准价"的人民币口径计算。
+  const domestic = officialPrice.domesticRegion === true
+  const officialInputCny = domestic
+    ? officialPrice.inputUsdPerMillion
+    : officialPrice.inputUsdPerMillion * usdExchangeRate
+  const officialOutputCny = domestic
+    ? officialPrice.outputUsdPerMillion
+    : officialPrice.outputUsdPerMillion * usdExchangeRate
+  if (!Number.isFinite(officialInputCny) || officialInputCny <= 0) return null
+  if (!Number.isFinite(officialOutputCny) || officialOutputCny <= 0) return null
+
+  const effectiveOfficialMultiplier = systemInputCny / officialInputCny
   if (!Number.isFinite(effectiveOfficialMultiplier)) return null
 
   return {
@@ -88,5 +112,8 @@ export function computeDisplayedPrice(
     systemInputCny,
     systemOutputCny,
     effectiveOfficialMultiplier,
+    officialInputCny,
+    officialOutputCny,
+    officialRegion: domestic ? 'domestic' : 'international',
   }
 }

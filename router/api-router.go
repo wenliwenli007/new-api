@@ -238,6 +238,7 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			officialPricingRoute.GET("", controller.GetOfficialPricing)
 			officialPricingRoute.POST("/import", controller.ImportOfficialPricing)
+			officialPricingRoute.POST("/upsert", controller.UpsertOfficialPricing)
 		}
 		taskPluginRoute := apiRouter.Group("/plugin/task")
 		taskPluginRoute.Use(middleware.RootAuth())

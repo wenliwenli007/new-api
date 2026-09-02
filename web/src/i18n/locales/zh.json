@@ -2148,7 +2148,7 @@
     "footer.columns.related.links.oneApi": "One API",
     "footer.columns.related.title": "相关项目",
     "footer.defaultCopyright": "版权所有。",
-    "footer.new\u0061pi.projectAttributionSuffix": "版权所有，由项目贡献者设计与开发。",
+    "footer.newapi.projectAttributionSuffix": "版权所有，由项目贡献者设计与开发。",
     "footer.platformLinks.contributor": "贡献者计划",
     "footer.platformLinks.health": "渠道健康",
     "footer.platformLinks.market": "模型市场",
@@ -5675,6 +5675,10 @@
     "importOfficialPricing": "导入官方基准价",
     "importOfficialPricingDone": "已导入 {{count}} 个模型的官方基准价",
     "importOfficialPricingFailed": "导入官方基准价失败",
-    "importOfficialPricingTip": "按当前全局倍率表生成官方基准价（USD/1M），供渠道定价联动与市场页展示"
+    "importOfficialPricingTip": "按当前全局倍率表生成官方基准价（USD/1M），供渠道定价联动与市场页展示",
+    "marketPage": {
+      "regionDomestic": "国内官网价",
+      "regionInternational": "国际官网价"
+    }
   }
 }
