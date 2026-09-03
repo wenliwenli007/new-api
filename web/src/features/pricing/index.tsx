@@ -21,6 +21,10 @@ import { useTranslation } from 'react-i18next'
 
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
+import { FilterChip } from '@/components/ui/v2-widgets'
+import { ReferenceSystemCard } from '@/components/ui/v2-reference'
+import { GlassSurface } from '@/components/ui/v2-surfaces'
+import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
 
 import {
   LoadingSkeleton,
@@ -32,7 +36,7 @@ import {
   ModelCardGrid,
   ModelDetailsDrawer,
 } from './components'
-import { EXCLUDED_GROUPS, VIEW_MODES } from './constants'
+import { EXCLUDED_GROUPS, FILTER_ALL, VIEW_MODES } from './constants'
 import { useFilters } from './hooks/use-filters'
 import { usePricingData } from './hooks/use-pricing-data'
 
@@ -53,6 +57,27 @@ export function Pricing() {
     priceRate,
     usdExchangeRate,
   } = usePricingData()
+
+  // v2: 官网价格管道同步状态 + 品牌快选（真实 official_pricing 快照）
+  const { officialPricing } = useOfficialPricing()
+  const officialCount = Object.keys(officialPricing || {}).length
+  const latestVerified = useMemo(() => {
+    const dates = Object.values(officialPricing || {})
+      .map((e) => e.verified_on)
+      .filter(Boolean)
+      .sort()
+    return dates[dates.length - 1] || ''
+  }, [officialPricing])
+
+  const vendorChips = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const m of models || []) {
+      if (m.vendor_name) {
+        counts.set(m.vendor_name, (counts.get(m.vendor_name) || 0) + 1)
+      }
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
+  }, [models])
 
   const {
     searchInput,
@@ -200,6 +225,36 @@ export function Pricing() {
               )}
               className='mx-auto mt-4 max-w-2xl sm:mt-6'
             />
+
+            {/* v2: 官网价格管道同步状态条（真实快照数据） */}
+            {officialCount > 0 && (
+              <div className='mx-auto mt-4 flex w-fit items-center gap-2 rounded-full bg-success/10 px-4 py-1.5 text-xs font-semibold text-success'>
+                <span className='size-1.5 rounded-full bg-success' />
+                {t('Price pipeline synced', {
+                  date: latestVerified,
+                  count: officialCount,
+                })}
+              </div>
+            )}
+
+            {/* v2: 品牌快选 chips（真实 vendor 聚合，点击过滤） */}
+            {vendorChips.length > 0 && (
+              <div className='mx-auto mt-3 flex max-w-3xl flex-wrap justify-center gap-2'>
+                {vendorChips.map(([name, count]) => (
+                  <FilterChip
+                    key={name}
+                    title={name}
+                    subtitle={t('{{count}} models', { count })}
+                    active={vendorFilter === name}
+                    onClick={() =>
+                      setVendorFilter(
+                        vendorFilter === name ? FILTER_ALL : name
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            )}
           </header>
 
           <div className='grid gap-4 xl:grid-cols-[330px_minmax(0,1fr)]'>
@@ -225,38 +280,58 @@ export function Pricing() {
             />
 
             <main className='min-w-0 space-y-4'>
-              <PricingToolbar
-                filteredCount={filteredModels.length}
-                totalCount={models?.length}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                tokenUnit={tokenUnit}
-                onTokenUnitChange={setTokenUnit}
-                showRechargePrice={showRechargePrice}
-                onRechargePriceChange={setShowRechargePrice}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                quotaTypeFilter={quotaTypeFilter}
-                endpointTypeFilter={endpointTypeFilter}
-                vendorFilter={vendorFilter}
-                groupFilter={groupFilter}
-                tagFilter={tagFilter}
-                onQuotaTypeChange={setQuotaTypeFilter}
-                onEndpointTypeChange={setEndpointTypeFilter}
-                onVendorChange={setVendorFilter}
-                onGroupChange={setGroupFilter}
-                onTagChange={setTagFilter}
-                vendors={vendors || []}
-                groups={availableGroups}
-                groupRatios={groupRatio}
-                tags={availableTags}
-                models={models || []}
-                hasActiveFilters={hasActiveFilters}
-                activeFilterCount={activeFilterCount}
-                onClearFilters={clearFilters}
-              />
+              <GlassSurface variant='shell' className='space-y-4 p-4 sm:p-5'>
+                <PricingToolbar
+                  filteredCount={filteredModels.length}
+                  totalCount={models?.length}
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  tokenUnit={tokenUnit}
+                  onTokenUnitChange={setTokenUnit}
+                  showRechargePrice={showRechargePrice}
+                  onRechargePriceChange={setShowRechargePrice}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  quotaTypeFilter={quotaTypeFilter}
+                  endpointTypeFilter={endpointTypeFilter}
+                  vendorFilter={vendorFilter}
+                  groupFilter={groupFilter}
+                  tagFilter={tagFilter}
+                  onQuotaTypeChange={setQuotaTypeFilter}
+                  onEndpointTypeChange={setEndpointTypeFilter}
+                  onVendorChange={setVendorFilter}
+                  onGroupChange={setGroupFilter}
+                  onTagChange={setTagFilter}
+                  vendors={vendors || []}
+                  groups={availableGroups}
+                  groupRatios={groupRatio}
+                  tags={availableTags}
+                  models={models || []}
+                  hasActiveFilters={hasActiveFilters}
+                  activeFilterCount={activeFilterCount}
+                  onClearFilters={clearFilters}
+                />
 
-              {renderPricingContent()}
+                {renderPricingContent()}
+              </GlassSurface>
+
+              {/* v2: 双参照系说明卡（复用显示偏好的参照系文案） */}
+              <div className='grid gap-3 sm:grid-cols-2'>
+                <ReferenceSystemCard
+                  region='domestic'
+                  title={t('profile.displayPrefs.domestic.title')}
+                  description={t('profile.displayPrefs.domestic.description')}
+                  icon='¥'
+                />
+                <ReferenceSystemCard
+                  region='international'
+                  title={t('profile.displayPrefs.international.title')}
+                  description={t(
+                    'profile.displayPrefs.international.description'
+                  )}
+                  icon='$'
+                />
+              </div>
             </main>
           </div>
 

@@ -2963,6 +2963,8 @@
     "Model scope": "Model scope",
     "Model selected": "Model selected",
     "Model Square": "Model Square",
+    "Price pipeline synced": "Official price pipeline · synced {{date}} ({{count}} models)",
+    "{{count}} models": "{{count}} models",
     "Model Tags": "Model Tags",
     "Model to use for testing": "Model to use for testing",
     "Model to use when testing channel connectivity": "Model to use when testing channel connectivity",
