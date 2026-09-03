@@ -5748,14 +5748,25 @@
     "pricingDetails.createToken": "Create Token",
     "pricingDetails.viewFullPricing": "View Full Pricing",
     "healthPage": {
-      "healthPage.events.title": "Recent Events",
-      "healthPage.events.live": "live",
-      "healthPage.events.pricingSync": "Official price pipeline synced ({{count}} models)",
-      "healthPage.events.window": "rolling",
-      "healthPage.events.perfWindow": "Model performance window: last {{hours}}h aggregated",
-      "healthPage.events.component": "component",
-      "healthPage.events.up": "operational",
-      "healthPage.events.issue": "attention needed"
+      "events.title": "Recent Events",
+      "events.live": "live",
+      "events.pricingSync": "Official price pipeline synced ({{count}} models)",
+      "events.window": "rolling",
+      "events.perfWindow": "Model performance window: last {{hours}}h aggregated",
+      "events.component": "component",
+      "events.up": "operational",
+      "events.issue": "attention needed",
+      "metrics.latency": "Latency",
+      "metrics.tps": "TPS",
+      "metrics.requests": "Requests",
+      "loadFailed": "Failed to load, please try again later",
+      "sections.pricingPipeline": "Official pricing pipeline",
+      "sections.models": "Model health (last {{hours}}h)",
+      "sections.components": "Components",
+      "pipeline.entries": "entries",
+      "pipeline.latestVerified": "Latest verified",
+      "pipeline.empty": "No pricing pipeline records yet",
+      "links.pricing": "View full pricing"
     },
     "marketPage.table.ratio": "×",
     "marketPage.table.success": "Success",
@@ -5795,6 +5806,12 @@
     "marketPage.detail.routing": "Routing metrics",
     "marketPage.detail.realtime": "Live",
     "marketPage.detail.h24": "24h",
-    "marketPage.detail.rateLimit": "Rate limit"
+    "marketPage.detail.rateLimit": "Rate limit",
+    "marketPage.quickBrands": "Quick brands",
+    "marketPage.modelsCount": "{{count}} models",
+    "marketPage.quickModels": "Quick models",
+    "marketPage.searchPlaceholder": "Search models…",
+    "marketPage.resetFilters": "Reset filters",
+    "marketPage.detail.origin": "Origin"
   }
 }

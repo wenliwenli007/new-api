@@ -5765,14 +5765,25 @@
     "pricingDetails.createToken": "登录后创建令牌",
     "pricingDetails.viewFullPricing": "查看完整价目表",
     "healthPage": {
-      "healthPage.events.title": "最近事件",
-      "healthPage.events.live": "实时",
-      "healthPage.events.pricingSync": "官网价格管道已同步（{{count}} 个模型）",
-      "healthPage.events.window": "滚动",
-      "healthPage.events.perfWindow": "模型性能统计窗口：近 {{hours}} 小时聚合",
-      "healthPage.events.component": "组件",
-      "healthPage.events.up": "运行正常",
-      "healthPage.events.issue": "需要关注"
+      "events.title": "最近事件",
+      "events.live": "实时",
+      "events.pricingSync": "官网价格管道已同步（{{count}} 个模型）",
+      "events.window": "滚动",
+      "events.perfWindow": "模型性能统计窗口：近 {{hours}} 小时聚合",
+      "events.component": "组件",
+      "events.up": "运行正常",
+      "events.issue": "需要关注",
+      "metrics.latency": "延迟",
+      "metrics.tps": "TPS",
+      "metrics.requests": "请求数",
+      "loadFailed": "加载失败，请稍后重试",
+      "sections.pricingPipeline": "官网价格管道",
+      "sections.models": "模型健康（近 {{hours}} 小时）",
+      "sections.components": "组件状态",
+      "pipeline.entries": "条目",
+      "pipeline.latestVerified": "最近核验",
+      "pipeline.empty": "暂无价格管道记录",
+      "links.pricing": "查看完整定价"
     },
     "marketPage.table.inputCache": "输入价格/缓存",
     "marketPage.table.tags": "特性标签",
@@ -5799,6 +5810,12 @@
     "marketPage.detail.routing": "路由指标",
     "marketPage.detail.realtime": "实时",
     "marketPage.detail.h24": "24h",
-    "marketPage.detail.rateLimit": "限流"
+    "marketPage.detail.rateLimit": "限流",
+    "marketPage.quickBrands": "快选品牌",
+    "marketPage.modelsCount": "{{count}} 个模型",
+    "marketPage.quickModels": "快选模型",
+    "marketPage.searchPlaceholder": "搜索模型…",
+    "marketPage.resetFilters": "重置筛选",
+    "marketPage.detail.origin": "货源"
   }
 }
