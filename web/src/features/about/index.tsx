@@ -36,64 +36,71 @@ function EmptyAboutState() {
     <PublicLayout showMainContainer={false}>
       <PastelBackdrop />
       <div className='mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-12 sm:px-8 sm:py-16'>
-        <GlassSurface variant='shell' className='space-y-3'>
-          <span className='inline-flex items-center gap-2 rounded-full border border-border/60 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary'>
-            <Sparkles className='size-3.5' />
-            {t('Our Mission')}
-          </span>
-          <h1 className='text-balance text-3xl font-semibold tracking-tight sm:text-4xl'>
-            {t(
-              'One gateway to every model — transparent pricing, real-time routing.'
-            )}
+        <GlassSurface variant='shell' className='space-y-3 text-center'>
+          <h1 className='text-balance text-3xl font-bold tracking-tight sm:text-4xl'>
+            {t('aboutPage.hero.title')}
           </h1>
-          <p className='text-pretty text-base text-muted-foreground sm:text-lg'>
-            {t(
-              'We aggregate curated AI models behind a single, predictable gateway so individuals and teams can discover, compare and ship with confidence.'
-            )}
+          <p className='text-pretty mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg'>
+            {t('aboutPage.hero.subtitle')}
           </p>
         </GlassSurface>
 
-        <div className='grid gap-4 sm:grid-cols-2'>
-          <GlassSurface variant='card' className='space-y-2'>
-            <div className='flex items-center gap-2 text-primary'>
-              <ShieldCheck className='size-5' />
-              <h2 className='text-lg font-semibold'>
-                {t('Transparent Pricing Promise')}
-              </h2>
-            </div>
-            <p className='text-sm leading-relaxed text-muted-foreground'>
-              {t(
-                'Every model shows its source ratio and final unit price up front. No hidden markups, no surprise fees — the published price is the price you pay.'
-              )}
-            </p>
-          </GlassSurface>
+        <GlassSurface variant='card' className='space-y-3'>
+          <div className='flex items-center gap-2 text-primary'>
+            <ShieldCheck className='size-5' />
+            <h2 className='text-lg font-semibold'>{t('aboutPage.diff.title')}</h2>
+          </div>
+          <ol className='text-sm leading-relaxed text-muted-foreground space-y-2'>
+            {[1, 2, 3, 4].map((i) => (
+              <li key={i} className='flex gap-2'>
+                <span className='text-primary font-bold'>{i}.</span>
+                <span>{t(`aboutPage.diff.item${i}`)}</span>
+              </li>
+            ))}
+          </ol>
+        </GlassSurface>
 
-          <GlassSurface variant='card' className='space-y-2'>
-            <div className='flex items-center gap-2 text-primary'>
-              <Mail className='size-5' />
-              <h2 className='text-lg font-semibold'>{t('Contact & Support')}</h2>
-            </div>
-            <p className='text-sm leading-relaxed text-muted-foreground'>
-              {t('For commercial licensing or support, reach us at')}{' '}
-              <a
-                href='mailto:support@quantumnous.com'
-                className='text-primary font-medium hover:underline'
-              >
-                support@quantumnous.com
-              </a>
-            </p>
-            <p className='text-sm text-muted-foreground'>
-              <a
-                href='https://github.com/QuantumNous/new-api'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='text-primary font-medium hover:underline'
-              >
-                {t('https://github.com/QuantumNous/new-api')}
-              </a>
-            </p>
-          </GlassSurface>
-        </div>
+        <GlassSurface variant='card' className='space-y-3'>
+          <div className='flex items-center gap-2 text-primary'>
+            <Sparkles className='size-5' />
+            <h2 className='text-lg font-semibold'>{t('aboutPage.terms.title')}</h2>
+          </div>
+          <ul className='text-sm leading-relaxed text-muted-foreground space-y-2'>
+            {[1, 2, 3, 4].map((i) => (
+              <li key={i} className='flex gap-2'>
+                <span className='text-primary'>•</span>
+                <span>{t(`aboutPage.terms.item${i}`)}</span>
+              </li>
+            ))}
+          </ul>
+        </GlassSurface>
+
+        <GlassSurface variant='card' className='space-y-2'>
+          <div className='flex items-center gap-2 text-primary'>
+            <Mail className='size-5' />
+            <h2 className='text-lg font-semibold'>{t('aboutPage.contact.title')}</h2>
+          </div>
+          <p className='text-sm leading-relaxed text-muted-foreground'>
+            {t('aboutPage.contact.lead')}{' '}
+            <a
+              href='mailto:support@llmcommons.com'
+              className='text-primary font-medium hover:underline'
+            >
+              support@llmcommons.com
+            </a>
+          </p>
+          <p className='text-sm text-muted-foreground'>
+            {t('aboutPage.contact.status')}{' '}
+            <a href='/status' className='text-primary font-medium hover:underline'>
+              /status
+            </a>
+            {' · '}
+            {t('aboutPage.contact.pricing')}{' '}
+            <a href='/pricing' className='text-primary font-medium hover:underline'>
+              /pricing
+            </a>
+          </p>
+        </GlassSurface>
 
         <p className='text-center text-xs text-muted-foreground'>
           <a

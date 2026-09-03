@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import {
   ArrowLeft,
   BadgeCheck,
@@ -1511,6 +1511,25 @@ function ModelOfficialPricingHero(props: {
           </p>
         )}
       </GlassSurface>
+
+      {/* v2: 双 CTA（对齐设计稿） */}
+      <div className='mt-4 flex flex-wrap gap-2'>
+        <Button
+          size='sm'
+          className='h-9 rounded-full px-5 text-xs'
+          render={<Link to='/keys' />}
+        >
+          {t('pricingDetails.createToken')}
+        </Button>
+        <Button
+          variant='outline'
+          size='sm'
+          className='h-9 rounded-full px-5 text-xs'
+          render={<Link to='/pricing' />}
+        >
+          {t('pricingDetails.viewFullPricing')}
+        </Button>
+      </div>
 
       {entry && (
         <div className='text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs'>

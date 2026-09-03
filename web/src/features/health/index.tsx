@@ -357,6 +357,62 @@ export function ChannelHealth() {
           {renderUptime()}
         </GlassSurface>
 
+        {/* v2: 最近事件时间线（真实数据源：价格管道同步 / 性能窗口 / 组件状态） */}
+        <GlassSurface variant='shell' className='space-y-3'>
+          <div className='flex items-center justify-between'>
+            <h2 className='text-base font-semibold'>
+              {t('healthPage.events.title')}
+            </h2>
+            <span className='text-muted-foreground/70 text-xs'>
+              {t('healthPage.events.live')}
+            </span>
+          </div>
+          <ol className='space-y-0'>
+            {[
+              {
+                time: latestVerified || '—',
+                text: t('healthPage.events.pricingSync', {
+                  count: officialCount,
+                }),
+                ok: true,
+              },
+              {
+                time: t('healthPage.events.window'),
+                text: t('healthPage.events.perfWindow', {
+                  hours: PERF_WINDOW_HOURS,
+                }),
+                ok: true,
+              },
+              ...uptimeGroups
+                .flatMap((g) => g.monitors ?? [])
+                .slice(0, 5)
+                .map((m) => ({
+                  time: t('healthPage.events.component'),
+                  text: `${m.name}: ${m.status === 1 ? t('healthPage.events.up') : t('healthPage.events.issue')}`,
+                  ok: m.status === 1,
+                })),
+            ].map((ev, i, arr) => (
+              <li key={i} className='relative flex gap-3 pb-4 last:pb-0'>
+                {i < arr.length - 1 && (
+                  <span className='bg-border/60 absolute top-5 left-[5px] h-full w-px' />
+                )}
+                <span
+                  className={cn(
+                    'mt-1.5 size-2.5 shrink-0 rounded-full',
+                    ev.ok ? 'bg-success' : 'bg-destructive'
+                  )}
+                />
+                <div className='min-w-0'>
+                  <div className='text-muted-foreground/70 text-[11px] tabular-nums'>
+                    {ev.time}
+                  </div>
+                  <div className='text-sm'>{ev.text}</div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </GlassSurface>
+
         {/* Cross links */}
         <div className='text-muted-foreground flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm'>
           <Link to='/market' className='text-primary hover:underline'>

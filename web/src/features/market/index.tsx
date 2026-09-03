@@ -18,17 +18,15 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
 import {
-  Activity,
   HeartPulse,
   KeyRound,
   Plug,
   RefreshCw,
-  ShieldCheck,
-  Store,
   UserPlus,
 } from 'lucide-react'
-import { useMemo, useState, Fragment } from 'react'
+import { useEffect, useMemo, useState, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 
 import { useStatus } from '@/hooks/use-status'
 import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
@@ -44,8 +42,9 @@ import {
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { GlassSurface } from '@/components/ui/v2-surfaces'
-import { FilterChip } from '@/components/ui/v2-widgets'
+import { CurrencyDisplayToggle, FilterChip, getDisplayCurrency, SuccessBars } from '@/components/ui/v2-widgets'
 import { KVRow } from '@/components/ui/v2-reference'
+import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
 import {
   Table,
   TableBody,
@@ -155,27 +154,53 @@ function formatMultiplier(value: number): string {
   return Number.isFinite(value) ? `${value.toFixed(2)}×` : '—'
 }
 
-function renderOutputPrice(
-  output: number | null,
-  hasExchangeRate: boolean,
-  missingRateLabel: string
-) {
-  if (output === null) return <span className='text-muted-foreground'>—</span>
-  return hasExchangeRate ? formatCny(output) : missingRateLabel
-}
-
 const SKELETON_ROWS = ['row-a', 'row-b', 'row-c']
-const SKELETON_CELLS = ['model', 'input', 'output', 'mode', 'failover']
+const SKELETON_CELLS = ['model', 'input', 'output', 'ratio', 'succ', 'lat', 'act']
 
 export function ModelMarket() {
   const { t } = useTranslation()
   const { models, isLoading, error, refetch } = usePricingData()
   const { status } = useStatus()
   const { officialPricing } = useOfficialPricing()
-  // v2：搜索/品牌过滤/展开详情
+  // v2：搜索/品牌过滤/展开详情 + 计费/排序 + ¥/$ 显示偏好
   const [search, setSearch] = useState('')
   const [brandFilter, setBrandFilter] = useState<string | null>(null)
   const [openModel, setOpenModel] = useState<string | null>(null)
+  const [billingFilter, setBillingFilter] = useState('')
+  const [sortBy, setSortBy] = useState('')
+  const [currency, setCurrency] = useState<'CNY' | 'USD'>(getDisplayCurrency)
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const c = (e as CustomEvent).detail?.currency
+      if (c === 'CNY' || c === 'USD') setCurrency(c)
+    }
+    window.addEventListener('display-currency-change', handler)
+    return () => window.removeEventListener('display-currency-change', handler)
+  }, [])
+
+  // v2：真实模型性能（成功率/延迟），供富表使用
+  const perfQuery = useQuery({
+    queryKey: ['market-perf-summary', 24],
+    queryFn: () => getPerfMetricsSummary(24),
+    staleTime: 60_000,
+    retry: 1,
+  })
+  const perfMap = useMemo(() => {
+    const map = new Map<
+      string,
+      { rate: number; latencyMs: number; recent?: number[] }
+    >()
+    for (const p of perfQuery.data?.data.models ?? []) {
+      map.set(p.model_name, {
+        rate: p.success_rate,
+        latencyMs: p.avg_latency_ms,
+        recent: p.recent_success_rates,
+      })
+    }
+    return map
+  }, [perfQuery.data])
+
   const usdExchangeRate = status?.usd_exchange_rate
   const hasExchangeRate =
     typeof usdExchangeRate === 'number' &&
@@ -205,6 +230,13 @@ export function ModelMarket() {
   const visibleModels = useMemo(() => {
     let list = defaultGroupModels
     if (brandFilter) list = list.filter((m) => m.vendor_name === brandFilter)
+    if (billingFilter) {
+      list = list.filter((m) =>
+        billingFilter === 'request'
+          ? m.quota_type === QUOTA_TYPE_VALUES.REQUEST
+          : m.quota_type !== QUOTA_TYPE_VALUES.REQUEST
+      )
+    }
     const q = search.trim().toLowerCase()
     if (q) {
       list = list.filter(
@@ -213,8 +245,23 @@ export function ModelMarket() {
           (m.vendor_name || '').toLowerCase().includes(q)
       )
     }
+    if (sortBy) {
+      const keyFns: Record<string, (m: PricingModel) => number> = {
+        ratio: (m) => m.model_ratio || 0,
+        input: (m) => (m.model_ratio || 0) * 2,
+        latency: (m) => perfMap.get(m.model_name)?.latencyMs ?? Number.MAX_VALUE,
+      }
+      const fn = keyFns[sortBy]
+      if (fn) list = [...list].sort((a, b) => fn(a) - fn(b))
+    }
     return list
-  }, [defaultGroupModels, brandFilter, search])
+  }, [defaultGroupModels, brandFilter, search, billingFilter, sortBy, perfMap])
+
+  // ¥/$ 显示换算：内部价为 CNY，USD = CNY ÷ 实时汇率
+  const fmtPrice = (cny: number) =>
+    currency === 'USD' && hasExchangeRate
+      ? formatUsd(cny / (usdExchangeRate as number))
+      : formatCny(cny)
 
   const baseUrl = `${window.location.origin}/v1`
   const loadFailed = Boolean(error) || defaultGroupModels.length === 0
@@ -235,7 +282,7 @@ export function ModelMarket() {
     if (loadFailed) {
       return (
         <TableRow>
-          <TableCell colSpan={5}>
+          <TableCell colSpan={7}>
             <div className='text-muted-foreground space-y-1 py-4 text-center text-sm'>
               <p>{t('marketPage.loadFailed')}</p>
               <p className='text-muted-foreground/70 text-xs'>
@@ -259,9 +306,15 @@ export function ModelMarket() {
     return visibleModels.map((model) => {
       const prices = computePrices(model, usdExchangeRate, officialPricing)
       const finalPrice = hasExchangeRate
-        ? `${formatCny(prices.input)} / ${formatCny(prices.output ?? 0)}`
+        ? `${fmtPrice(prices.input)} / ${fmtPrice(prices.output ?? 0)}`
         : t('marketPage.exchangeRateMissing')
       const open = openModel === model.model_name
+      const perf = perfMap.get(model.model_name)
+      const bars = perf?.recent?.length
+        ? perf.recent.slice(-12).map((r) => r >= 90)
+        : perf
+          ? Array.from({ length: 12 }, () => perf.rate >= 90)
+          : null
       return (
         <Fragment key={model.model_name}>
         <TableRow
@@ -277,25 +330,59 @@ export function ModelMarket() {
             )}
           </TableCell>
           <TableCell className='font-medium tabular-nums'>
-            {hasExchangeRate ? formatCny(prices.input) : t('marketPage.exchangeRateMissing')}
+            {hasExchangeRate ? fmtPrice(prices.input) : t('marketPage.exchangeRateMissing')}
+            <span className='text-muted-foreground/60 ml-1 text-xs'>
+              /{' '}
+              {prices.perRequest
+                ? t('marketPage.unit.request')
+                : t('marketPage.unit.tokens')}
+            </span>
           </TableCell>
           <TableCell className='font-medium tabular-nums'>
-            {renderOutputPrice(
-              prices.output,
-              hasExchangeRate,
-              t('marketPage.exchangeRateMissing')
+            {prices.output == null
+              ? '—'
+              : hasExchangeRate
+                ? fmtPrice(prices.output)
+                : t('marketPage.exchangeRateMissing')}
+          </TableCell>
+          <TableCell>
+            {prices.perRequest ? (
+              <span className='text-muted-foreground text-xs'>—</span>
+            ) : (
+              <Badge
+                variant='secondary'
+                className={
+                  prices.effectiveOfficialMultiplier != null &&
+                  prices.effectiveOfficialMultiplier <= 1.2
+                    ? 'gap-1 bg-success/15 text-success'
+                    : 'gap-1'
+                }
+              >
+                {prices.effectiveOfficialMultiplier == null
+                  ? '—'
+                  : formatMultiplier(prices.effectiveOfficialMultiplier)}
+              </Badge>
             )}
           </TableCell>
           <TableCell>
-            {prices.perRequest
-              ? t('marketPage.mode.request')
-              : t('marketPage.mode.token')}
+            {bars ? (
+              <SuccessBars
+                bars={bars}
+                percentage={`${(perf?.rate ?? 0).toFixed(1)}%`}
+              />
+            ) : (
+              <span className='text-muted-foreground text-xs'>—</span>
+            )}
+          </TableCell>
+          <TableCell className='tabular-nums'>
+            {perf ? `${(perf.latencyMs / 1000).toFixed(2)}s` : '—'}
           </TableCell>
           <TableCell>
-            <Badge variant='secondary' className='gap-1'>
-              <ShieldCheck className='size-3' />
-              {t('marketPage.failover.badge')}
-            </Badge>
+            <Link to='/sign-in' onClick={(e) => e.stopPropagation()}>
+              <Button size='sm' className='h-8 rounded-full px-4 text-xs'>
+                {t('marketPage.createToken')}
+              </Button>
+            </Link>
             <span className='text-muted-foreground ml-2 text-xs'>
               {open ? '▲' : '▼'}
             </span>
@@ -303,7 +390,7 @@ export function ModelMarket() {
         </TableRow>
         {open && !prices.perRequest && (
           <TableRow>
-            <TableCell colSpan={5} className='bg-muted/20 p-4'>
+            <TableCell colSpan={7} className='bg-muted/20 p-4'>
               <div className='grid gap-4 sm:grid-cols-3'>
                 <div>
                   <div className='mb-2 text-xs font-bold'>{t('marketPage.officialPeakPrice')}</div>
@@ -345,28 +432,22 @@ export function ModelMarket() {
   return (
     <PublicLayout>
       <div className='mx-auto max-w-5xl space-y-10 py-8'>
-        {/* Hero */}
-        <div className='space-y-4 text-center'>
-          <div className='flex justify-center'>
-            <div className='bg-primary/10 text-primary flex size-14 items-center justify-center rounded-2xl'>
-              <Store className='size-7' />
-            </div>
-          </div>
-          <div className='flex flex-wrap items-center justify-center gap-3'>
+        {/* v2: 页头（标题左 + ¥/$ 切换右） */}
+        <div className='flex items-start justify-between gap-4'>
+          <div>
             <h1 className='text-3xl font-bold tracking-tight sm:text-4xl'>
               {t('marketPage.title')}
             </h1>
-            <Badge variant='secondary' className='gap-1'>
-              <Activity className='size-3' />
-              {t('marketPage.live')}
-            </Badge>
+            <p className='text-muted-foreground mt-2 max-w-2xl text-sm'>
+              {t('marketPage.subtitle')}
+            </p>
           </div>
-          <p className='text-muted-foreground mx-auto max-w-2xl'>
-            {t('marketPage.subtitle')}
-          </p>
-          <p className='text-muted-foreground/70 mx-auto max-w-2xl text-xs'>
-            {t('marketPage.unitNote')}
-          </p>
+          <div className='flex shrink-0 flex-col items-end gap-2 pt-1'>
+            <CurrencyDisplayToggle />
+            <span className='text-muted-foreground/70 text-xs'>
+              {t('marketPage.unitNote')}
+            </span>
+          </div>
         </div>
 
         {/* v2: 品牌快选 + 模型快选 + 筛选工具栏 */}
@@ -414,7 +495,27 @@ export function ModelMarket() {
                   ))}
               </div>
             </div>
+            {/* v2: 完整筛选工具栏（计费类型/排序/搜索/刷新/重置） */}
             <div className='flex flex-wrap items-center gap-2'>
+              <select
+                value={billingFilter}
+                onChange={(e) => setBillingFilter(e.target.value)}
+                className='border-border bg-card/80 rounded-xl border px-3 py-2 text-sm outline-none focus:border-primary'
+              >
+                <option value=''>{t('marketPage.billing.all')}</option>
+                <option value='token'>{t('marketPage.billing.token')}</option>
+                <option value='request'>{t('marketPage.billing.request')}</option>
+              </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className='border-border bg-card/80 rounded-xl border px-3 py-2 text-sm outline-none focus:border-primary'
+              >
+                <option value=''>{t('marketPage.sort.default')}</option>
+                <option value='ratio'>{t('marketPage.sort.ratio')}</option>
+                <option value='input'>{t('marketPage.sort.input')}</option>
+                <option value='latency'>{t('marketPage.sort.latency')}</option>
+              </select>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -425,8 +526,21 @@ export function ModelMarket() {
                 variant='outline'
                 size='sm'
                 onClick={() => {
+                  refetch()
+                  perfQuery.refetch()
+                }}
+              >
+                <RefreshCw className='size-4' />
+                {t('marketPage.refresh')}
+              </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => {
                   setSearch('')
                   setBrandFilter(null)
+                  setBillingFilter('')
+                  setSortBy('')
                 }}
               >
                 {t('marketPage.resetFilters')}
@@ -454,8 +568,10 @@ export function ModelMarket() {
                     <TableHead>{t('marketPage.table.model')}</TableHead>
                     <TableHead>{t('marketPage.table.input')}</TableHead>
                     <TableHead>{t('marketPage.table.output')}</TableHead>
-                    <TableHead>{t('marketPage.table.mode')}</TableHead>
-                    <TableHead>{t('marketPage.table.failover')}</TableHead>
+                    <TableHead>{t('marketPage.table.ratio')}</TableHead>
+                    <TableHead>{t('marketPage.table.success')}</TableHead>
+                    <TableHead>{t('marketPage.table.latency')}</TableHead>
+                    <TableHead>{t('marketPage.table.action')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>{renderTableBody()}</TableBody>
