@@ -3839,6 +3839,13 @@
     "Professional team providing 24/7 technical support": "专业团队提供 24/7 技术支持",
     "Profile": "个人资料",
     "Profile updated successfully": "个人资料更新成功",
+    "profile.displayPrefs.description": "选择账单金额的展示币种，仅影响界面显示，不会写回系统配置或改变实际计费。",
+    "profile.displayPrefs.domestic.description": "国内渠道价格与用量以人民币（¥ CNY）展示，参照中国市场计费口径。",
+    "profile.displayPrefs.domestic.title": "中国价镜（¥ CNY）",
+    "profile.displayPrefs.international.description": "国际渠道价格与用量以美元（$ USD）展示，参照全球市场计费口径。",
+    "profile.displayPrefs.international.title": "世界价镜（$ USD）",
+    "profile.displayPrefs.note": "当前计费单位为 {{currency}}。该偏好仅保存在本地浏览器中，不影响实际计费与余额。",
+    "profile.displayPrefs.title": "显示偏好",
     "Programming": "编程",
     "Progress": "进度",
     "Project": "项目",
@@ -5679,6 +5686,13 @@
     "marketPage": {
       "regionDomestic": "国内官网价",
       "regionInternational": "国际官网价"
-    }
+    },
+    "One gateway to every model — transparent pricing, real-time routing.": "一个网关，通向每个模型——透明定价，实时路由。",
+    "Our Mission": "我们的使命",
+    "We aggregate curated AI models behind a single, predictable gateway so individuals and teams can discover, compare and ship with confidence.": "我们将精选的 AI 模型汇聚在一个可预测的网关之后，让个人与团队能够放心地探索、比较并交付。",
+    "Transparent Pricing Promise": "透明定价承诺",
+    "Every model shows its source ratio and final unit price up front. No hidden markups, no surprise fees — the published price is the price you pay.": "每个模型都前置展示其来源倍率与最终单价。没有隐藏加价，没有意外费用——公示价格即您实际支付的价格。",
+    "Contact & Support": "联系与支持",
+    "For commercial licensing or support, reach us at": "如需商业授权或支持，请联系"
   }
 }

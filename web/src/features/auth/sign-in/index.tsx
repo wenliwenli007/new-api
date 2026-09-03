@@ -57,7 +57,7 @@ export function SignIn() {
         <TermsFooter
           variant='sign-in'
           status={status}
-          className='text-center'
+          className='text-center text-muted-foreground'
         />
       </div>
     </AuthLayout>

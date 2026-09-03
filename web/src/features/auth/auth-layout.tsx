@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
+import { GlassSurface, PastelBackdrop } from '@/components/ui/v2-surfaces'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSystemConfig } from '@/hooks/use-system-config'
 
@@ -31,10 +32,11 @@ export function AuthLayout({ children }: AuthLayoutProps) {
   const { systemName, logo, loading } = useSystemConfig()
 
   return (
-    <div className='relative grid h-svh max-w-none'>
+    <div className='relative grid h-svh max-w-none grid-cols-1 lg:grid-cols-2'>
+      <PastelBackdrop />
       <Link
         to='/'
-        className='absolute top-4 left-4 z-10 flex items-center gap-2 transition-opacity hover:opacity-80 sm:top-8 sm:left-8'
+        className='absolute top-4 left-4 z-20 flex items-center gap-2 transition-opacity hover:opacity-80 sm:top-8 sm:left-8'
       >
         <div className='relative h-8 w-8'>
           {loading ? (
@@ -53,10 +55,35 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           <h1 className='text-xl font-medium'>{systemName}</h1>
         )}
       </Link>
-      <div className='container flex items-center pt-16 sm:pt-0'>
-        <div className='mx-auto flex w-full flex-col justify-center space-y-2 px-4 py-8 sm:w-[480px] sm:p-8'>
-          {children}
+
+      {/* Left brand panel — hidden on small screens */}
+      <aside className='relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12'>
+        <div
+          aria-hidden='true'
+          className='pointer-events-none absolute inset-0 -z-10 bg-radial-[at_18%_22%] from-primary/20 via-primary/5 to-transparent bg-radial-[at_82%_88%] from-chart-3/18 via-transparent to-transparent'
+        />
+        <div className='mt-auto max-w-md space-y-5'>
+          <h2 className='text-balance text-3xl font-semibold tracking-tight'>
+            {t(
+              'One gateway to every model — transparent pricing, real-time routing.'
+            )}
+          </h2>
+          <p className='text-pretty text-base text-muted-foreground'>
+            {t(
+              'Discover curated AI models, compare pricing and capabilities, and choose the right model for every scenario.'
+            )}
+          </p>
         </div>
+      </aside>
+
+      {/* Right form panel */}
+      <div className='flex items-center justify-center px-4 py-16 sm:px-8'>
+        <GlassSurface
+          variant='shell'
+          className='mx-auto w-full max-w-[480px] space-y-8 p-6 sm:p-8'
+        >
+          {children}
+        </GlassSurface>
       </div>
     </div>
   )

@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { PastelBackdrop } from '@/components/ui/v2-surfaces'
+
 import type { TopNavLink } from '../types'
 import { PublicHeader, type PublicHeaderProps } from './public-header'
 
@@ -34,7 +36,11 @@ type PublicLayoutProps = {
 
 export function PublicLayout(props: PublicLayoutProps) {
   return (
-    <div className='bg-background text-foreground relative min-h-svh overflow-x-clip'>
+    <div className='bg-background text-foreground relative isolate min-h-svh overflow-x-clip'>
+      {/* v2 decorative pastel backdrop. `isolate` above makes this fixed
+          -z-10 layer paint above the root bg-background and below content,
+          so the subtle radial tints are visible without affecting layout. */}
+      <PastelBackdrop />
       <PublicHeader
         navContent={props.navContent}
         navLinks={props.navLinks}

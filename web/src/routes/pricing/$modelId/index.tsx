@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { createFileRoute } from '@tanstack/react-router'
 import z from 'zod'
 
-import { ModelDetailPage } from '@/features/sharellm/model-detail'
+import { ModelDetails } from '@/features/pricing/components/model-details'
 
 // Kept wide for compatibility: the shared pricing components still read
 // these search params from the route.
@@ -36,13 +36,8 @@ const modelDetailsSearchSchema = z.object({
   rechargePrice: z.boolean().optional(),
 })
 
-function ModelDetailRoute() {
-  const { modelId } = Route.useParams()
-  return <ModelDetailPage modelId={modelId} />
-}
-
 export const Route = createFileRoute('/pricing/$modelId/')({
   validateSearch: modelDetailsSearchSchema,
-  // Public page: price detail and contributor offers are visible to guests.
-  component: ModelDetailRoute,
+  // Public page: real pricing data from /api/pricing + /api/perf-metrics.
+  component: ModelDetails,
 })

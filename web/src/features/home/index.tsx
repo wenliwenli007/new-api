@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { PublicLayout } from '@/components/layout'
 import { Footer } from '@/components/layout/components/footer'
 import { RichContent } from '@/components/rich-content'
+import { GlassSurface } from '@/components/ui/v2-surfaces'
 import { useTheme } from '@/context/theme-provider'
 import { isLikelyHtml } from '@/lib/content-format'
 import { useAuthStore } from '@/stores/auth-store'
@@ -122,7 +123,18 @@ export function Home() {
 
   return (
     <PublicLayout showMainContainer={false}>
-      <Hero isAuthenticated={isAuthenticated} />
+      {/*
+        v2 default home: pastel backdrop is provided by PublicLayout; the
+        Hero region sits inside a GlassSurface `shell` capsule to deliver the
+        glassmorphism title area. CMS branches above are intentionally left
+        untouched. Stats/Features/HowItWorks/CTA keep their existing hooks
+        and Button components.
+      */}
+      <div className='relative z-10 mx-auto max-w-6xl px-4 pt-10 md:pt-16'>
+        <GlassSurface variant='shell' className='overflow-hidden p-0 sm:p-0'>
+          <Hero isAuthenticated={isAuthenticated} />
+        </GlassSurface>
+      </div>
       <Stats />
       <Features />
       <HowItWorks />

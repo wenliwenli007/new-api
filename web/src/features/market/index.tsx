@@ -43,6 +43,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { GlassSurface } from '@/components/ui/v2-surfaces'
 import {
   Table,
   TableBody,
@@ -353,7 +354,8 @@ export function ModelMarket() {
               {t('marketPage.dataSource')}
             </span>
           </div>
-          <Card>
+          <GlassSurface variant='shell' className='p-0 overflow-hidden'>
+            <Card className='border-0 shadow-none ring-0'>
             <CardContent className='px-0'>
               <Table>
                 <TableHeader>
@@ -369,6 +371,7 @@ export function ModelMarket() {
               </Table>
             </CardContent>
           </Card>
+          </GlassSurface>
           <p className='text-muted-foreground text-sm leading-relaxed'>
             {t('marketPage.failover.note')}
           </p>

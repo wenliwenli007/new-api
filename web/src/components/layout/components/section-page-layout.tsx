@@ -24,6 +24,8 @@ import {
   type ReactNode,
 } from 'react'
 
+import { GlassSurface } from '@/components/ui/v2-surfaces'
+
 import { Main } from './main'
 import { PageFooterProvider } from './page-footer'
 
@@ -52,6 +54,11 @@ SectionPageLayoutBreadcrumb.displayName = 'SectionPageLayout.Breadcrumb'
 export type SectionPageLayoutProps = {
   children: ReactNode
   fixedContent?: boolean
+  /**
+   * 内容区表面变体。`glass` 启用 v2 玻璃拟态视觉（半透明 + 背景模糊），
+   * 复用语义 token，dark 模式自动降透明度；`default` 为现有纯色背景。
+   */
+  surfaceVariant?: 'default' | 'glass'
 }
 
 export function SectionPageLayout(props: SectionPageLayoutProps) {
@@ -104,7 +111,16 @@ export function SectionPageLayout(props: SectionPageLayoutProps) {
               : 'min-h-0 flex-1 overflow-auto px-3 pt-1 pb-3 sm:px-4 sm:pt-1.5 sm:pb-4'
           }
         >
-          {content}
+          {props.surfaceVariant === 'glass' ? (
+            <GlassSurface
+              variant='shell'
+              className='min-h-full'
+            >
+              {content}
+            </GlassSurface>
+          ) : (
+            content
+          )}
         </div>
 
         <div

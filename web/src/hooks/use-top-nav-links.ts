@@ -105,14 +105,12 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('About'), href: '/about' })
   }
 
-  // C2C platform pages (contributor program / model market / channel health):
-  // hidden until content reaches publish quality — admin-only navigation;
-  // route guards redirect non-admins to home. Re-enable by removing the
-  // isAdmin conditions (backend HeaderNavModules flags remain as global kill).
+  // C2C platform pages: market is now public (real /api/pricing data);
+  // contributor and health remain admin-only until content reaches publish quality.
   if (isAdmin && modules?.contributor !== false) {
     links.push({ title: t('Contributor Program'), href: '/contributor' })
   }
-  if (isAdmin && modules?.market !== false) {
+  if (modules?.market !== false) {
     links.push({ title: t('Model Market'), href: '/market' })
   }
   if (isAdmin && modules?.health !== false) {

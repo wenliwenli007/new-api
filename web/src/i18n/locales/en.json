@@ -2148,7 +2148,7 @@
     "footer.columns.related.links.oneApi": "One API",
     "footer.columns.related.title": "Related Projects",
     "footer.defaultCopyright": "All rights reserved.",
-    "footer.new\u0061pi.projectAttributionSuffix": "All rights reserved. Designed and developed by the project contributors.",
+    "footer.newapi.projectAttributionSuffix": "All rights reserved. Designed and developed by the project contributors.",
     "footer.platformLinks.contributor": "Contributor Program",
     "footer.platformLinks.health": "Channel Health",
     "footer.platformLinks.market": "Model Market",
@@ -3839,6 +3839,13 @@
     "Professional team providing 24/7 technical support": "Professional team providing 24/7 technical support",
     "Profile": "Profile",
     "Profile updated successfully": "Profile updated successfully",
+    "profile.displayPrefs.description": "Choose the currency used to show billing amounts. Display only — it never changes system configuration or actual billing.",
+    "profile.displayPrefs.domestic.description": "Shows domestic-channel prices and usage in CNY (¥), following China-market billing conventions.",
+    "profile.displayPrefs.domestic.title": "China Price Mirror (¥ CNY)",
+    "profile.displayPrefs.international.description": "Shows international-channel prices and usage in USD ($), following global billing conventions.",
+    "profile.displayPrefs.international.title": "Global Price Mirror ($ USD)",
+    "profile.displayPrefs.note": "{{currency}} is the current billing unit. This preference is stored only in your browser and does not affect actual billing or balance.",
+    "profile.displayPrefs.title": "Display Preferences",
     "Programming": "Programming",
     "Progress": "Progress",
     "Project": "Project",
@@ -5675,6 +5682,13 @@
     "importOfficialPricing": "导入官方基准价",
     "importOfficialPricingDone": "已导入 {{count}} 个模型的官方基准价",
     "importOfficialPricingFailed": "导入官方基准价失败",
-    "importOfficialPricingTip": "按当前全局倍率表生成官方基准价（USD/1M），供渠道定价联动与市场页展示"
+    "importOfficialPricingTip": "按当前全局倍率表生成官方基准价（USD/1M），供渠道定价联动与市场页展示",
+    "One gateway to every model — transparent pricing, real-time routing.": "One gateway to every model — transparent pricing, real-time routing.",
+    "Our Mission": "Our Mission",
+    "We aggregate curated AI models behind a single, predictable gateway so individuals and teams can discover, compare and ship with confidence.": "We aggregate curated AI models behind a single, predictable gateway so individuals and teams can discover, compare and ship with confidence.",
+    "Transparent Pricing Promise": "Transparent Pricing Promise",
+    "Every model shows its source ratio and final unit price up front. No hidden markups, no surprise fees — the published price is the price you pay.": "Every model shows its source ratio and final unit price up front. No hidden markups, no surprise fees — the published price is the price you pay.",
+    "Contact & Support": "Contact & Support",
+    "For commercial licensing or support, reach us at": "For commercial licensing or support, reach us at"
   }
 }
