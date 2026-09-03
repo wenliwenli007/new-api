@@ -27,7 +27,7 @@ import {
   Store,
   UserPlus,
 } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useStatus } from '@/hooks/use-status'
@@ -44,6 +44,8 @@ import {
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { GlassSurface } from '@/components/ui/v2-surfaces'
+import { FilterChip } from '@/components/ui/v2-widgets'
+import { KVRow } from '@/components/ui/v2-reference'
 import {
   Table,
   TableBody,
@@ -170,6 +172,10 @@ export function ModelMarket() {
   const { models, isLoading, error, refetch } = usePricingData()
   const { status } = useStatus()
   const { officialPricing } = useOfficialPricing()
+  // v2：搜索/品牌过滤/展开详情
+  const [search, setSearch] = useState('')
+  const [brandFilter, setBrandFilter] = useState<string | null>(null)
+  const [openModel, setOpenModel] = useState<string | null>(null)
   const usdExchangeRate = status?.usd_exchange_rate
   const hasExchangeRate =
     typeof usdExchangeRate === 'number' &&
@@ -185,6 +191,30 @@ export function ModelMarket() {
       ),
     [models]
   )
+
+  // v2：品牌聚合 + 过滤后的模型列表
+  const brandChips = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const m of defaultGroupModels) {
+      const v = m.vendor_name || ''
+      if (v) counts.set(v, (counts.get(v) || 0) + 1)
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1])
+  }, [defaultGroupModels])
+
+  const visibleModels = useMemo(() => {
+    let list = defaultGroupModels
+    if (brandFilter) list = list.filter((m) => m.vendor_name === brandFilter)
+    const q = search.trim().toLowerCase()
+    if (q) {
+      list = list.filter(
+        (m) =>
+          m.model_name.toLowerCase().includes(q) ||
+          (m.vendor_name || '').toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [defaultGroupModels, brandFilter, search])
 
   const baseUrl = `${window.location.origin}/v1`
   const loadFailed = Boolean(error) || defaultGroupModels.length === 0
@@ -226,13 +256,18 @@ export function ModelMarket() {
       )
     }
 
-    return defaultGroupModels.map((model) => {
+    return visibleModels.map((model) => {
       const prices = computePrices(model, usdExchangeRate, officialPricing)
       const finalPrice = hasExchangeRate
         ? `${formatCny(prices.input)} / ${formatCny(prices.output ?? 0)}`
         : t('marketPage.exchangeRateMissing')
+      const open = openModel === model.model_name
       return (
-        <TableRow key={model.model_name}>
+        <Fragment key={model.model_name}>
+        <TableRow
+          className='cursor-pointer'
+          onClick={() => setOpenModel(open ? null : model.model_name)}
+        >
           <TableCell>
             <div className='font-medium'>{model.model_name}</div>
             {model.vendor_name && (
@@ -240,59 +275,9 @@ export function ModelMarket() {
                 {model.vendor_name}
               </div>
             )}
-            {!prices.perRequest && (
-              <div className='text-muted-foreground mt-2 space-y-1 text-xs'>
-                {prices.official ? (
-                  <>
-                    <div>
-                      {t('marketPage.officialPeakPrice')}:{' '}
-                      {prices.official.domesticRegion
-                        ? `${formatCny(prices.official.inputUsdPerMillion)} / ${formatCny(prices.official.outputUsdPerMillion)} / M（${t('marketPage.regionDomestic')}）`
-                        : `${formatUsd(prices.official.inputUsdPerMillion)} / ${formatUsd(prices.official.outputUsdPerMillion)} / M（${t('marketPage.regionInternational')}）`}
-                    </div>
-                    <div>
-                      {t('marketPage.systemMultiplier')}: {formatMultiplier(model.model_ratio)}
-                    </div>
-                    <div>
-                      {t('marketPage.effectiveOfficialMultiplier')}:{' '}
-                      {prices.effectiveOfficialMultiplier == null
-                        ? '—'
-                        : formatMultiplier(prices.effectiveOfficialMultiplier)}
-                    </div>
-                    <div>
-                      {t('marketPage.finalPrice')}: {finalPrice}
-                    </div>
-                    {prices.official.sourceUrl && (
-                      <div>
-                        {t('marketPage.officialPriceSource')}: {' '}
-                        <a
-                          href={prices.official.sourceUrl}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='underline underline-offset-2'
-                        >
-                          {prices.official.sourceUrl}
-                        </a>
-                      </div>
-                    )}
-                    <div>
-                      {t('marketPage.priceVerifiedOn')}: {prices.official.verifiedOn}
-                    </div>
-                  </>
-                ) : (
-                  <div>{t('marketPage.officialPriceNotConfigured')}</div>
-                )}
-              </div>
-            )}
           </TableCell>
           <TableCell className='font-medium tabular-nums'>
             {hasExchangeRate ? formatCny(prices.input) : t('marketPage.exchangeRateMissing')}
-            <span className='text-muted-foreground/60 ml-1 text-xs'>
-              /{' '}
-              {prices.perRequest
-                ? t('marketPage.unit.request')
-                : t('marketPage.unit.tokens')}
-            </span>
           </TableCell>
           <TableCell className='font-medium tabular-nums'>
             {renderOutputPrice(
@@ -311,8 +296,48 @@ export function ModelMarket() {
               <ShieldCheck className='size-3' />
               {t('marketPage.failover.badge')}
             </Badge>
+            <span className='text-muted-foreground ml-2 text-xs'>
+              {open ? '▲' : '▼'}
+            </span>
           </TableCell>
         </TableRow>
+        {open && !prices.perRequest && (
+          <TableRow>
+            <TableCell colSpan={5} className='bg-muted/20 p-4'>
+              <div className='grid gap-4 sm:grid-cols-3'>
+                <div>
+                  <div className='mb-2 text-xs font-bold'>{t('marketPage.officialPeakPrice')}</div>
+                  {prices.official ? (
+                    <>
+                      <KVRow k={t('marketPage.table.input')} v={prices.official.domesticRegion ? formatCny(prices.official.inputUsdPerMillion) : formatUsd(prices.official.inputUsdPerMillion)} />
+                      <KVRow k={t('marketPage.table.output')} v={prices.official.domesticRegion ? formatCny(prices.official.outputUsdPerMillion) : formatUsd(prices.official.outputUsdPerMillion)} />
+                      <KVRow k={t('marketPage.systemMultiplier')} v={formatMultiplier(model.model_ratio)} />
+                      <KVRow k={t('marketPage.effectiveOfficialMultiplier')} v={prices.effectiveOfficialMultiplier == null ? '—' : formatMultiplier(prices.effectiveOfficialMultiplier)} highlight />
+                      <KVRow k={t('marketPage.finalPrice')} v={finalPrice} highlight />
+                    </>
+                  ) : (
+                    <div className='text-muted-foreground text-xs'>{t('marketPage.officialPriceNotConfigured')}</div>
+                  )}
+                </div>
+                <div>
+                  <div className='mb-2 text-xs font-bold'>{t('marketPage.health.title')}</div>
+                  <KVRow k={t('marketPage.table.model')} v={model.model_name} />
+                  {model.vendor_name && <KVRow k='Vendor' v={model.vendor_name} />}
+                  {prices.official?.sourceUrl && (
+                    <KVRow k={t('marketPage.officialPriceSource')} v={<a href={prices.official.sourceUrl} target='_blank' rel='noreferrer' className='text-primary underline underline-offset-2'>{t('marketPage.officialPriceSource')}</a>} />
+                  )}
+                  {prices.official && <KVRow k={t('marketPage.priceVerifiedOn')} v={prices.official.verifiedOn} />}
+                </div>
+                <div>
+                  <div className='mb-2 text-xs font-bold'>{t('marketPage.table.failover')}</div>
+                  <p className='text-muted-foreground text-xs leading-relaxed'>{t('marketPage.failover.note')}</p>
+                  <Button variant='outline' size='sm' className='mt-2' render={<Link to='/keys' />}>{t('marketPage.steps.two')}</Button>
+                </div>
+              </div>
+            </TableCell>
+          </TableRow>
+        )}
+        </Fragment>
       )
     })
   }
@@ -343,6 +368,72 @@ export function ModelMarket() {
             {t('marketPage.unitNote')}
           </p>
         </div>
+
+        {/* v2: 品牌快选 + 模型快选 + 筛选工具栏 */}
+        {!loadFailed && (
+          <GlassSurface variant='shell' className='space-y-4'>
+            <div>
+              <div className='mb-2 text-sm font-bold'>
+                {t('marketPage.quickBrands')}
+              </div>
+              <div className='flex flex-wrap gap-2'>
+                {brandChips.map(([name, count]) => (
+                  <FilterChip
+                    key={name}
+                    title={name}
+                    subtitle={t('marketPage.modelsCount', { count })}
+                    active={brandFilter === name}
+                    onClick={() =>
+                      setBrandFilter(brandFilter === name ? null : name)
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className='mb-2 text-sm font-bold'>
+                {t('marketPage.quickModels')}
+              </div>
+              <div className='flex flex-wrap gap-2'>
+                {(brandFilter
+                  ? defaultGroupModels.filter(
+                      (m) => m.vendor_name === brandFilter
+                    )
+                  : defaultGroupModels
+                )
+                  .slice(0, 12)
+                  .map((m) => (
+                    <FilterChip
+                      key={m.model_name}
+                      title={m.model_name}
+                      active={search === m.model_name}
+                      onClick={() =>
+                        setSearch(search === m.model_name ? '' : m.model_name)
+                      }
+                    />
+                  ))}
+              </div>
+            </div>
+            <div className='flex flex-wrap items-center gap-2'>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('marketPage.searchPlaceholder')}
+                className='border-border bg-card/80 min-w-52 flex-1 rounded-xl border px-3 py-2 text-sm outline-none focus:border-primary'
+              />
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => {
+                  setSearch('')
+                  setBrandFilter(null)
+                }}
+              >
+                {t('marketPage.resetFilters')}
+              </Button>
+            </div>
+          </GlassSurface>
+        )}
 
         {/* Price table */}
         <section className='space-y-3'>

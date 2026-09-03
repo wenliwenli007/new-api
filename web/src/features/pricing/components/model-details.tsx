@@ -20,8 +20,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import {
   ArrowLeft,
+  BadgeCheck,
   CalendarClock,
   Code2,
+  ExternalLink,
   FileText,
   HeartPulse,
   Info,
@@ -38,6 +40,7 @@ import { StaticDataTable } from '@/components/data-table'
 import { sideDrawerContentClassName } from '@/components/drawer-layout'
 import { GroupBadge } from '@/components/group-badge'
 import { PublicLayout } from '@/components/layout'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -48,6 +51,13 @@ import {
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { KVRow } from '@/components/ui/v2-reference'
+import { GlassSurface, PastelBackdrop } from '@/components/ui/v2-surfaces'
+import {
+  isDomesticPrice,
+  type OfficialPricingEntry,
+} from '@/features/channels/components/pricing/types'
+import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
 import { getPerfMetrics } from '@/features/performance-metrics/api'
 import {
   formatLatency,
@@ -1377,6 +1387,162 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
 }
 
 // ----------------------------------------------------------------------------
+// v2 official-pricing hero (page-level, above the existing detail content)
+// ----------------------------------------------------------------------------
+
+const OFFICIAL_BASE_GROUP_KEY = '_base'
+const OFFICIAL_BASE_GROUP_RATIO = { [OFFICIAL_BASE_GROUP_KEY]: 1 }
+
+function formatOfficialUnitPrice(value: number | undefined, domestic: boolean) {
+  if (value == null || !Number.isFinite(value) || value <= 0) return '—'
+  const digits = value > 0 && value < 0.01 ? 4 : 2
+  return domestic ? `¥${value.toFixed(digits)}` : `$${value.toFixed(digits)}`
+}
+
+function ModelOfficialPricingHero(props: {
+  model: PricingModel
+  priceRate: number
+  usdExchangeRate: number
+  tokenUnit: TokenUnit
+  showRechargePrice: boolean
+}) {
+  const { t } = useTranslation()
+  const { model } = props
+  const { officialPricing } = useOfficialPricing()
+  const entry: OfficialPricingEntry | undefined =
+    officialPricing[model.model_name?.toLowerCase?.() ?? '']
+  const domestic = entry ? isDomesticPrice(entry) : false
+  const isTokenBased = isTokenBasedModel(model)
+  const modelIconKey = model.icon || model.vendor_icon
+  const modelIcon = modelIconKey ? getLobeIcon(modelIconKey, 28) : null
+
+  const renderSitePrice = (type: PriceType) =>
+    formatGroupPrice(
+      model,
+      OFFICIAL_BASE_GROUP_KEY,
+      type,
+      props.tokenUnit,
+      props.showRechargePrice,
+      props.priceRate,
+      props.usdExchangeRate,
+      OFFICIAL_BASE_GROUP_RATIO
+    )
+
+  return (
+    <GlassSurface variant='shell' className='mb-6'>
+      <div className='flex flex-wrap items-center gap-3'>
+        {modelIcon}
+        <h1 className='min-w-0 flex-1 font-mono text-2xl font-bold tracking-tight break-all sm:text-3xl'>
+          {model.model_name}
+        </h1>
+        {entry && (
+          <Badge
+            variant='secondary'
+            className='bg-success/10 text-success gap-1 border-success/30'
+          >
+            <BadgeCheck className='size-3.5' />
+            {t('pricingDetails.officialVerified')}
+          </Badge>
+        )}
+      </div>
+      {model.vendor_name && (
+        <p className='text-muted-foreground mt-1 text-sm'>
+          {model.vendor_name}
+        </p>
+      )}
+
+      <GlassSurface variant='inset' className='mt-4'>
+        {entry ? (
+          <>
+            <KVRow
+              k={t('pricingDetails.baselineInput')}
+              v={`${formatOfficialUnitPrice(entry.input, domestic)} / ${t('marketPage.unit.tokens')}`}
+            />
+            <KVRow
+              k={t('pricingDetails.baselineOutput')}
+              v={`${formatOfficialUnitPrice(entry.output, domestic)} / ${t('marketPage.unit.tokens')}`}
+            />
+            <KVRow
+              k={t('pricingDetails.referenceSystem')}
+              v={
+                domestic
+                  ? t('pricingDetails.regionDomestic')
+                  : t('pricingDetails.regionInternational')
+              }
+            />
+            <KVRow
+              k={t('pricingDetails.siteMultiplier')}
+              v={`${model.model_ratio ?? '—'}×`}
+            />
+            {isTokenBased ? (
+              <>
+                <KVRow
+                  k={t('pricingDetails.sitePriceInput')}
+                  v={renderSitePrice('input')}
+                  highlight
+                />
+                <KVRow
+                  k={t('pricingDetails.sitePriceOutput')}
+                  v={renderSitePrice('output')}
+                  highlight
+                />
+              </>
+            ) : (
+              <KVRow
+                k={t('pricingDetails.sitePriceRequest')}
+                v={formatFixedPrice(
+                  model,
+                  OFFICIAL_BASE_GROUP_KEY,
+                  props.showRechargePrice,
+                  props.priceRate,
+                  props.usdExchangeRate,
+                  OFFICIAL_BASE_GROUP_RATIO
+                )}
+                highlight
+              />
+            )}
+            <p className='text-muted-foreground/70 mt-2 text-center text-[11px] tracking-wide'>
+              {t('pricingDetails.formula')}
+            </p>
+          </>
+        ) : (
+          <p className='text-muted-foreground text-sm'>
+            {t('pricingDetails.noOfficial')}
+          </p>
+        )}
+      </GlassSurface>
+
+      {entry && (
+        <div className='text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs'>
+          <span>
+            {t('pricingDetails.priceSource')}
+            {': '}
+            {entry.source_url ? (
+              <a
+                href={entry.source_url}
+                target='_blank'
+                rel='noreferrer'
+                className='text-primary inline-flex items-center gap-1 hover:underline'
+              >
+                {entry.source_url}
+                <ExternalLink className='size-3' />
+              </a>
+            ) : (
+              '—'
+            )}
+          </span>
+          {entry.verified_on && (
+            <span>
+              {t('pricingDetails.verifiedOn')}: {entry.verified_on}
+            </span>
+          )}
+        </div>
+      )}
+    </GlassSurface>
+  )
+}
+
+// ----------------------------------------------------------------------------
 // Drawer & page wrappers
 // ----------------------------------------------------------------------------
 
@@ -1483,6 +1649,7 @@ export function ModelDetails() {
 
   return (
     <PublicLayout>
+      <PastelBackdrop />
       <div className='mx-auto max-w-5xl px-4 sm:px-6'>
         <Button
           variant='ghost'
@@ -1493,6 +1660,14 @@ export function ModelDetails() {
           <ArrowLeft className='size-3.5' />
           {t('Back')}
         </Button>
+
+        <ModelOfficialPricingHero
+          model={model}
+          priceRate={priceRate ?? 1}
+          usdExchangeRate={usdExchangeRate ?? 1}
+          tokenUnit={tokenUnit}
+          showRechargePrice={search.rechargePrice ?? false}
+        />
 
         <ModelDetailsContent
           model={model}

@@ -105,16 +105,16 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('About'), href: '/about' })
   }
 
-  // C2C platform pages: market is now public (real /api/pricing data);
-  // contributor and health remain admin-only until content reaches publish quality.
+  // 公开页：模型市场与服务状态（真实 /api/pricing + perf-metrics 数据）；
+  // 贡献者页继续管理员专属。
   if (isAdmin && modules?.contributor !== false) {
     links.push({ title: t('Contributor Program'), href: '/contributor' })
   }
   if (modules?.market !== false) {
     links.push({ title: t('Model Market'), href: '/market' })
   }
-  if (isAdmin && modules?.health !== false) {
-    links.push({ title: t('Channel Health'), href: '/health' })
+  if (modules?.health !== false) {
+    links.push({ title: t('Service Status'), href: '/health' })
   }
 
   return links

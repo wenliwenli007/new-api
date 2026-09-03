@@ -46,6 +46,7 @@ import {
   CardStaggerItem,
 } from '@/components/page-transition'
 import { Button } from '@/components/ui/button'
+import { GlassSurface } from '@/components/ui/v2-surfaces'
 import { IconBadge, type IconBadgeTone } from '@/components/ui/icon-badge'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
@@ -618,7 +619,7 @@ export function OverviewDashboard() {
   }
 
   return (
-    <div className='flex flex-col gap-4'>
+    <GlassSurface variant='shell' className='flex flex-col gap-4'>
       {setupGuideExpanded ? (
         <CardStaggerContainer className='grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
           <CardStaggerItem className='bg-card h-full overflow-hidden rounded-2xl border shadow-xs'>
@@ -797,6 +798,6 @@ export function OverviewDashboard() {
           )}
         </CardStaggerContainer>
       )}
-    </div>
+    </GlassSurface>
   )
 }

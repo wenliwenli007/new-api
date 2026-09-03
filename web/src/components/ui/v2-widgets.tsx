@@ -40,9 +40,11 @@ function FilterChip({
       data-active={active ? 'true' : 'false'}
       aria-pressed={active}
       className={cn(
-        'inline-flex shrink-0 items-center gap-2.5 rounded-xl px-4 py-2.5 text-left text-sm transition-all',
-        'border border-border bg-card/80 hover:border-primary hover:shadow-sm hover:-translate-y-px',
-        'active && border-primary active:bg-primary/10',
+        'inline-flex shrink-0 items-center gap-2.5 rounded-xl border px-4 py-2.5 text-left text-sm transition-all',
+        'bg-card/80 hover:-translate-y-px hover:shadow-sm',
+        active
+          ? 'border-primary bg-primary/10 shadow-sm'
+          : 'border-border hover:border-primary/60',
         className
       )}
       {...props}
