@@ -111,11 +111,13 @@ export function Home() {
     return (
       <PublicLayout>
         <div className='mx-auto max-w-6xl px-4 py-8'>
-          <RichContent
-            mode='markdown'
-            content={content}
-            className='custom-home-content'
-          />
+          <GlassSurface variant='shell' className='custom-home-content p-6 sm:p-10'>
+            <RichContent
+              mode='markdown'
+              content={content}
+              className='custom-home-content'
+            />
+          </GlassSurface>
         </div>
       </PublicLayout>
     )
