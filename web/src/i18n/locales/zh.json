@@ -5774,5 +5774,33 @@
     "healthPage.events.component": "组件",
     "healthPage.events.up": "运行正常",
     "healthPage.events.issue": "需要关注"
+  },
+  "marketPage": {
+    "marketPage.table.inputCache": "输入价格/缓存",
+    "marketPage.table.tags": "特性标签",
+    "marketPage.table.cache": "缓存",
+    "marketPage.tag.official": "官方渠道",
+    "marketPage.tag.request": "按次",
+    "marketPage.tag.lowprice": "低价",
+    "marketPage.brand.all": "全部品牌",
+    "marketPage.detail.priceCompare": "价格对比",
+    "marketPage.detail.officialInput": "官网基准 · 输入",
+    "marketPage.detail.officialCache": "官网基准 · 缓存命中",
+    "marketPage.detail.officialOutput": "官网基准 · 输出",
+    "marketPage.detail.siteInput": "本站售价 · 输入",
+    "marketPage.detail.siteCache": "本站售价 · 缓存",
+    "marketPage.detail.siteOutput": "本站售价 · 输出",
+    "marketPage.detail.source": "来源",
+    "marketPage.detail.channel": "渠道方",
+    "marketPage.detail.certification": "认证",
+    "marketPage.detail.direct": "官方直连",
+    "marketPage.detail.vendor": "厂商",
+    "marketPage.detail.context": "上下文",
+    "marketPage.detail.verify": "真伪核验",
+    "marketPage.detail.noShare": "官方渠道直连 · 无共享账号",
+    "marketPage.detail.routing": "路由指标",
+    "marketPage.detail.realtime": "实时",
+    "marketPage.detail.h24": "24h",
+    "marketPage.detail.rateLimit": "限流"
   }
 }
