@@ -5741,11 +5741,6 @@
     "marketPage.sort.input": "输入价从低到高",
     "marketPage.sort.latency": "延迟从低到高",
     "marketPage.refresh": "刷新",
-    "home.hero.badge": "官网价格每日 08:20 自动同步",
-    "home.hero.title": "把官方模型，变成一条简单的 API",
-    "home.hero.subtitle": "国内官方渠道直连，价格与来源都能核验。一个 Key 接入 DeepSeek、GLM、Kimi 等模型，余额按量扣除，没有套餐绑架。",
-    "home.hero.ctaMarket": "进入模型市场",
-    "home.hero.ctaConsole": "打开控制台",
     "aboutPage.hero.title": "关于 LLM 共有",
     "aboutPage.hero.subtitle": "官方渠道、透明定价的 AI 模型 API 中转站。让每一次调用都算数。",
     "aboutPage.diff.title": "我们与其他中转站的区别",
@@ -5816,6 +5811,53 @@
     "marketPage.quickModels": "快选模型",
     "marketPage.searchPlaceholder": "搜索模型…",
     "marketPage.resetFilters": "重置筛选",
-    "marketPage.detail.origin": "货源"
+    "marketPage.detail.origin": "货源",
+    "home": {
+      "dev": {
+        "title": "给开发者",
+        "textBefore": "OpenAI 兼容格式，base_url 只填 ",
+        "textMid": "，客户端自动补全 ",
+        "textAfter": "。",
+        "chips": [
+          "官方渠道",
+          "多路容灾",
+          "¥1 起充"
+        ]
+      },
+      "buyer": {
+        "title": "给采购者",
+        "text": "模型市场同时展示官网基准价、本站售价、倍率和核验来源；国内价镜与世界价镜随时切换，不靠模糊折扣包装。",
+        "chips": [
+          "每日校价",
+          "四层透明",
+          "CNY / USD"
+        ]
+      },
+      "pulse": {
+        "title": "今天的服务脉搏",
+        "subtitle": "同一份数据，市场页、状态页与控制台共享。",
+        "calls": "今日调用",
+        "tokens": "今日 Tokens",
+        "models": "在售模型",
+        "channels": "官方渠道",
+        "sync": "官网价同步",
+        "syncCount": "{{count}} 条",
+        "uptime": "服务可用性",
+        "viewStatus": "查看服务状态"
+      },
+      "hot": {
+        "title": "热门官方模型",
+        "subtitle": "价格为国内官网 ¥/百万 tokens 基准。",
+        "browse": "浏览全部",
+        "officialInput": "官网输入 {{price}}/1M"
+      },
+      "hero": {
+        "badge": "官网价格每日 08:20 自动同步",
+        "title": "把官方模型，变成一条简单的 API",
+        "subtitle": "国内官方渠道直连，价格与来源都能核验。一个 Key 接入 DeepSeek、GLM、Kimi 等模型，余额按量扣除，没有套餐绑架。",
+        "ctaMarket": "进入模型市场",
+        "ctaConsole": "打开控制台"
+      }
+    }
   }
 }

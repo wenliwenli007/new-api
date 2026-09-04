@@ -5724,11 +5724,6 @@
     "Contact & Support": "Contact & Support",
     "For commercial licensing or support, reach us at": "For commercial licensing or support, reach us at",
     "Service Status": "Service Status",
-    "home.hero.badge": "Official prices synced daily 08:20",
-    "home.hero.title": "Turn official models into one simple API",
-    "home.hero.subtitle": "Direct official channels with verifiable prices and sources. One key for DeepSeek, GLM, Kimi and more. Pay-as-you-go, no plan lock-in.",
-    "home.hero.ctaMarket": "Browse Models",
-    "home.hero.ctaConsole": "Open Console",
     "aboutPage.hero.title": "About LLM Commons",
     "aboutPage.hero.subtitle": "An API relay built on official channels with transparent, verifiable pricing.",
     "aboutPage.diff.title": "How we differ from other relays",
@@ -5812,6 +5807,53 @@
     "marketPage.quickModels": "Quick models",
     "marketPage.searchPlaceholder": "Search models…",
     "marketPage.resetFilters": "Reset filters",
-    "marketPage.detail.origin": "Origin"
+    "marketPage.detail.origin": "Origin",
+    "home": {
+      "dev": {
+        "title": "For developers",
+        "textBefore": "OpenAI-compatible. Just set base_url to ",
+        "textMid": " and the client appends ",
+        "textAfter": " automatically.",
+        "chips": [
+          "Official channels",
+          "Multi-route failover",
+          "Top up from ¥1"
+        ]
+      },
+      "buyer": {
+        "title": "For buyers",
+        "text": "The market shows official baseline prices, our prices, multipliers and verified sources side by side; switch between the China price mirror and the world price mirror anytime — no vague discount packaging.",
+        "chips": [
+          "Daily price checks",
+          "Four-layer transparency",
+          "CNY / USD"
+        ]
+      },
+      "pulse": {
+        "title": "Service pulse today",
+        "subtitle": "The same data shared by the market, status and console pages.",
+        "calls": "Calls today",
+        "tokens": "Tokens today",
+        "models": "Models on sale",
+        "channels": "Official channels",
+        "sync": "Official price sync",
+        "syncCount": "{{count}}",
+        "uptime": "Availability",
+        "viewStatus": "View service status"
+      },
+      "hot": {
+        "title": "Popular official models",
+        "subtitle": "Official China-site prices in ¥ per million tokens.",
+        "browse": "Browse all",
+        "officialInput": "Official input {{price}}/1M"
+      },
+      "hero": {
+        "badge": "Official prices synced daily 08:20",
+        "title": "Turn official models into one simple API",
+        "subtitle": "Direct official channels with verifiable prices and sources. One key for DeepSeek, GLM, Kimi and more. Pay-as-you-go, no plan lock-in.",
+        "ctaMarket": "Browse Models",
+        "ctaConsole": "Open Console"
+      }
+    }
   }
 }

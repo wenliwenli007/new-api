@@ -27,7 +27,7 @@ import { useTheme } from '@/context/theme-provider'
 import { isLikelyHtml } from '@/lib/content-format'
 import { useAuthStore } from '@/stores/auth-store'
 
-import { CTA, Features, Hero, HowItWorks, Stats } from './components'
+import { DualCards, Hero, HotModels, Pulse } from './components'
 import { useHomePageContent } from './hooks'
 
 export function Home() {
@@ -126,21 +126,18 @@ export function Home() {
   return (
     <PublicLayout showMainContainer={false}>
       {/*
-        v2 default home: pastel backdrop is provided by PublicLayout; the
-        Hero region sits inside a GlassSurface `shell` capsule to deliver the
-        glassmorphism title area. CMS branches above are intentionally left
-        untouched. Stats/Features/HowItWorks/CTA keep their existing hooks
-        and Button components.
+        v2 default home：严格对齐 prototype/llmcommons-ia/index.html——
+        居中 Hero（同步徽章/标题/副文案/双按钮）→ 给开发者/给采购者双卡
+        → 今天的服务脉搏（6 指标）→ 热门官方模型 chips。
+        CMS branches above are intentionally left untouched.
       */}
-      <div className='relative z-10 mx-auto max-w-6xl px-4 pt-10 md:pt-16'>
-        <GlassSurface variant='shell' className='overflow-hidden p-0 sm:p-0'>
-          <Hero isAuthenticated={isAuthenticated} />
-        </GlassSurface>
+      <div className='relative z-10 mx-auto max-w-6xl px-4 pt-8 md:pt-12'>
+        <Hero isAuthenticated={isAuthenticated} />
+        <DualCards />
+        <Pulse />
+        <HotModels />
+        <div className='h-8' />
       </div>
-      <Stats />
-      <Features />
-      <HowItWorks />
-      <CTA isAuthenticated={isAuthenticated} />
       <Footer />
     </PublicLayout>
   )
