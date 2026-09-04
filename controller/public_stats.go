@@ -24,7 +24,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Calcium-Ion/new-api/model"
+	"github.com/QuantumNous/new-api/model"
 )
 
 type TodayStatsResult struct {
