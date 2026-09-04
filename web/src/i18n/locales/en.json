@@ -5854,6 +5854,8 @@
         "ctaMarket": "Browse Models",
         "ctaConsole": "Open Console"
       }
-    }
+    },
+    "marketPage.table.cacheHit": "Cache hit",
+    "marketPage.table.since": "Since"
   }
 }

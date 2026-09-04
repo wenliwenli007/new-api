@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { getUptimeStatus } from '@/features/dashboard/api'
+import { api } from '@/lib/api'
 import { usePricingData } from '@/features/pricing/hooks'
 import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
 
@@ -36,12 +37,30 @@ function Stat({ num, label }: { num: string; label: string }) {
   )
 }
 
+type TodayStats = {
+  today_calls: number
+  today_tokens: number
+  official_channels: number
+}
+
+// 公开今日聚合（v2 服务脉搏）：今日调用/Tokens/官方渠道数
+async function getTodayStats(): Promise<TodayStats> {
+  const res = await api.get('/api/stats/today')
+  return res.data.data as TodayStats
+}
+
 /** v2 服务脉搏：今日调用/Tokens/官方渠道暂无公开接口，按创始人许可先显示 "—"，
  *  在售模型=/api/pricing 实数，官网价同步=official_pricing 快照条数，可用性=uptime。 */
 export function Pulse() {
   const { t } = useTranslation()
   const pricingQuery = usePricingData()
   const { officialPricing } = useOfficialPricing()
+  const statsQuery = useQuery({
+    queryKey: ['stats-today'],
+    queryFn: getTodayStats,
+    staleTime: 60 * 1000,
+    retry: false,
+  })
   const uptimeQuery = useQuery({
     queryKey: ['uptime-status'],
     queryFn: getUptimeStatus,
@@ -51,17 +70,28 @@ export function Pulse() {
 
   const modelCount = pricingQuery.models?.length ?? null
   const officialCount = Object.keys(officialPricing || {}).length || null
+  const stats = statsQuery.data
   const uptimeGroups = uptimeQuery.data?.data ?? []
   const monitors = uptimeGroups.flatMap((g) => g.monitors ?? [])
   const uptimeAvg = monitors.length
     ? monitors.reduce((sum, m) => sum + (m.uptime ?? 0), 0) / monitors.length
     : null
 
-  const stats: Array<[string, string | null]> = [
-    ['home.pulse.calls', null], // 今日调用：暂无公开接口
-    ['home.pulse.tokens', null], // 今日 Tokens：暂无公开接口
+  const fmtTokens = (n: number | undefined): string => {
+    if (n == null) return '—'
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+    return String(n)
+  }
+
+  const statsList: Array<[string, string | null]> = [
+    ['home.pulse.calls', stats ? String(stats.today_calls) : null],
+    ['home.pulse.tokens', stats ? fmtTokens(stats.today_tokens) : null],
     ['home.pulse.models', modelCount == null ? null : String(modelCount)],
-    ['home.pulse.channels', null], // 官方渠道数：暂无公开接口
+    [
+      'home.pulse.channels',
+      stats ? String(stats.official_channels) : null,
+    ],
     [
       'home.pulse.sync',
       officialCount == null ? null : t('home.pulse.syncCount', { count: officialCount }),
@@ -91,7 +121,7 @@ export function Pulse() {
         </Button>
       </div>
       <div className='mt-5 flex flex-wrap justify-center gap-9 pb-1'>
-        {stats.map(([key, value]) => (
+        {statsList.map(([key, value]) => (
           <Stat key={key} num={value ?? '—'} label={t(key)} />
         ))}
       </div>

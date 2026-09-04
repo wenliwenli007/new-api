@@ -5858,6 +5858,8 @@
         "ctaMarket": "进入模型市场",
         "ctaConsole": "打开控制台"
       }
-    }
+    },
+    "marketPage.table.cacheHit": "缓存命中",
+    "marketPage.table.since": "供货起"
   }
 }

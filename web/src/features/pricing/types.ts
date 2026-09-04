@@ -88,6 +88,8 @@ export type PricingModel = {
   input_modalities?: Modality[]
   output_modalities?: Modality[]
   capabilities?: ModelCapability[]
+  /** 供货起始：该模型最早启用渠道的创建时间（unix 秒） */
+  first_available_at?: number
 }
 
 /** Input/output modalities supported by a model. */

@@ -199,13 +199,14 @@ export function ModelMarket() {
   const perfMap = useMemo(() => {
     const map = new Map<
       string,
-      { rate: number; latencyMs: number; recent?: number[] }
+      { rate: number; latencyMs: number; recent?: number[]; cacheHitRate?: number }
     >()
     for (const p of perfQuery.data?.data.models ?? []) {
       map.set(p.model_name, {
         rate: p.success_rate,
         latencyMs: p.avg_latency_ms,
         recent: p.recent_success_rates,
+        cacheHitRate: p.cache_hit_rate,
       })
     }
     return map
@@ -318,11 +319,14 @@ export function ModelMarket() {
       const open = openModel === model.model_name
       const perf = perfMap.get(model.model_name)
       const recent = perf?.recent?.filter((r) => Number.isFinite(r)) ?? []
-      const bars = recent.length
-        ? recent.slice(-12).map((r) => r >= 90)
-        : perf
-          ? Array.from({ length: 12 }, () => perf.rate >= 90)
-          : null
+      let bars: boolean[] | null
+      if (recent.length) {
+        bars = recent.slice(-12).map((r) => r >= 90)
+      } else if (perf) {
+        bars = Array.from({ length: 12 }, () => perf.rate >= 90)
+      } else {
+        bars = null
+      }
       // 本站缓存读价 = ratio × 2 × cache_ratio × 汇率（真实字段）
       const cacheReadCny =
         !prices.perRequest && model.cache_ratio
@@ -379,11 +383,11 @@ export function ModelMarket() {
           </TableCell>
           {/* 输出价格 */}
           <TableCell className='font-medium tabular-nums'>
-            {prices.output == null
-              ? '—'
-              : hasExchangeRate
-                ? fmtPrice(prices.output)
-                : t('marketPage.exchangeRateMissing')}
+            {(() => {
+              if (prices.output == null) return '—'
+              if (!hasExchangeRate) return t('marketPage.exchangeRateMissing')
+              return fmtPrice(prices.output)
+            })()}
           </TableCell>
           {/* 倍率 */}
           <TableCell>
@@ -434,9 +438,22 @@ export function ModelMarket() {
               )}
             </div>
           </TableCell>
+          {/* 缓存命中率（真实 perf 聚合） */}
+          <TableCell className='tabular-nums'>
+            {perf?.cacheHitRate != null && perf.cacheHitRate > 0
+              ? `${perf.cacheHitRate.toFixed(1)}%`
+              : '—'}
+          </TableCell>
           {/* 延迟 */}
           <TableCell className='tabular-nums'>
             {perf ? `${(perf.latencyMs / 1000).toFixed(2)}s` : '—'}
+          </TableCell>
+          {/* 供货起（该模型最早启用渠道创建时间） */}
+          <TableCell className='text-muted-foreground tabular-nums text-xs'>
+            {model.first_available_at
+              ? new Date(model.first_available_at * 1000)
+                  .toLocaleDateString('zh-CN')
+              : '—'}
           </TableCell>
           {/* 操作 */}
           <TableCell>
@@ -453,7 +470,7 @@ export function ModelMarket() {
         {/* 展开式三栏详情（严格对齐设计稿：价格对比 / 来源 / 路由指标） */}
         {open && (
           <TableRow>
-            <TableCell colSpan={8} className='bg-muted/20 p-4'>
+            <TableCell colSpan={10} className='bg-muted/20 p-4'>
               <div className='grid gap-4 sm:grid-cols-3'>
                 <div>
                   <div className='mb-2 flex items-center justify-between text-xs font-bold'>
@@ -464,9 +481,23 @@ export function ModelMarket() {
                   </div>
                   {prices.official ? (
                     <>
-                      <KVRow k={t('marketPage.detail.officialInput')} v={prices.official.domesticRegion ? formatCny(prices.official.inputUsdPerMillion) : formatUsd(prices.official.inputUsdPerMillion)} />
-                      <KVRow k={t('marketPage.detail.officialCache')} v={officialCache != null ? (prices.official.domesticRegion ? formatCny(officialCache) : formatUsd(officialCache)) : '—'} />
-                      <KVRow k={t('marketPage.detail.officialOutput')} v={prices.official.domesticRegion ? formatCny(prices.official.outputUsdPerMillion) : formatUsd(prices.official.outputUsdPerMillion)} />
+                      <KVRow
+                        k={t('marketPage.detail.officialInput')}
+                        v={prices.official.domesticRegion ? formatCny(prices.official.inputUsdPerMillion) : formatUsd(prices.official.inputUsdPerMillion)}
+                      />
+                      <KVRow
+                        k={t('marketPage.detail.officialCache')}
+                        v={(() => {
+                          if (officialCache == null) return '—'
+                          return prices.official.domesticRegion
+                            ? formatCny(officialCache)
+                            : formatUsd(officialCache)
+                        })()}
+                      />
+                      <KVRow
+                        k={t('marketPage.detail.officialOutput')}
+                        v={prices.official.domesticRegion ? formatCny(prices.official.outputUsdPerMillion) : formatUsd(prices.official.outputUsdPerMillion)}
+                      />
                       <KVRow k={t('marketPage.detail.siteInput')} v={hasExchangeRate ? fmtPrice(prices.input) : '—'} highlight />
                       <KVRow k={t('marketPage.detail.siteCache')} v={cacheReadCny && hasExchangeRate ? fmtPrice(cacheReadCny) : '—'} />
                       <KVRow k={t('marketPage.detail.siteOutput')} v={prices.output != null && hasExchangeRate ? fmtPrice(prices.output) : '—'} highlight />
@@ -517,7 +548,7 @@ export function ModelMarket() {
                       <MetricBar
                         label={t('marketPage.detail.realtime')}
                         bars={bars}
-                        value={`${(recent[recent.length - 1] ?? perf?.rate ?? 0).toFixed(1)}%`}
+                        value={`${(recent.at(-1) ?? perf?.rate ?? 0).toFixed(1)}%`}
                       />
                       <MetricBar
                         label={t('marketPage.detail.h24')}
@@ -700,7 +731,9 @@ export function ModelMarket() {
                     <TableHead>{t('marketPage.table.ratio')}</TableHead>
                     <TableHead>{t('marketPage.table.success')}</TableHead>
                     <TableHead>{t('marketPage.table.tags')}</TableHead>
+                    <TableHead>{t('marketPage.table.cacheHit')}</TableHead>
                     <TableHead>{t('marketPage.table.latency')}</TableHead>
+                    <TableHead>{t('marketPage.table.since')}</TableHead>
                     <TableHead>{t('marketPage.table.action')}</TableHead>
                   </TableRow>
                 </TableHeader>

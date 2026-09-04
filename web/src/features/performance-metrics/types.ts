@@ -49,6 +49,8 @@ export type PerfModelSummary = {
   success_rate: number
   avg_tps: number
   recent_success_rates?: number[]
+  /** 缓存命中率（%）：cached_tokens / prompt_tokens，口径 24h 聚合 */
+  cache_hit_rate?: number
   request_count?: number
 }
 
