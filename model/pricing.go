@@ -40,6 +40,7 @@ type Pricing struct {
 	BillingUsageSchema     map[string]jsplugin.UsageFieldSchema `json:"billing_usage_schema,omitempty"`
 	BillingUsageExamples   []jsplugin.UsageExample              `json:"billing_usage_examples,omitempty"`
 	PricingVersion         string                               `json:"pricing_version,omitempty"`
+	FirstAvailableAt       int64                                `json:"first_available_at,omitempty"`
 }
 
 type PricingVendor struct {
@@ -359,12 +360,32 @@ func updatePricing() {
 	}
 
 	pricingMap = make([]Pricing, 0)
+	// 供货起始：各模型最早启用渠道的创建时间（公开市场页展示用）
+	modelFirstAvailableAt := make(map[string]int64)
+	{
+		type row struct {
+			Model       string `gorm:"column:model"`
+			CreatedTime int64  `gorm:"column:created_time"`
+		}
+		var rows []row
+		if err := DB.Table("abilities").
+			Select("abilities.model as model, MIN(channels.created_time) as created_time").
+			Joins("join channels on abilities.channel_id = channels.id").
+			Where("abilities.enabled = ? AND channels.status = ?", true, common.ChannelStatusEnabled).
+			Group("abilities.model").
+			Scan(&rows).Error; err == nil {
+			for _, r := range rows {
+				modelFirstAvailableAt[r.Model] = r.CreatedTime
+			}
+		}
+	}
 	pluginGeneration := jsplugin.DefaultRegistry.Generation()
 	for model, groups := range modelGroupsMap {
 		pricing := Pricing{
 			ModelName:              model,
 			EnableGroup:            groups.Items(),
 			SupportedEndpointTypes: modelSupportEndpointTypes[model],
+			FirstAvailableAt:       modelFirstAvailableAt[model],
 		}
 
 		// 补充模型元数据（描述、标签、供应商、状态）

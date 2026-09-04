@@ -1148,6 +1148,14 @@ func CountChannelsByType(channelType int) (int64, error) {
 	return count, err
 }
 
+// CountEnabledChannels returns the number of channels currently enabled,
+// for the public service pulse card.
+func CountEnabledChannels() int64 {
+	var count int64
+	DB.Model(&Channel{}).Where("status = ?", common.ChannelStatusEnabled).Count(&count)
+	return count
+}
+
 // Return map[type]count for all channels
 func CountChannelsGroupByType() (map[int64]int64, error) {
 	type result struct {

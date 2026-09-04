@@ -24,7 +24,7 @@ func Init() {
 	go flushLoop()
 }
 
-func RecordRelaySample(info *relaycommon.RelayInfo, success bool, outputTokens int64) {
+func RecordRelaySample(info *relaycommon.RelayInfo, success bool, outputTokens int64, promptTokens int64, cachedTokens int64) {
 	if info == nil {
 		return
 	}
@@ -51,6 +51,8 @@ func RecordRelaySample(info *relaycommon.RelayInfo, success bool, outputTokens i
 		Success:      success,
 		OutputTokens: outputTokens,
 		GenerationMs: generationMs,
+		PromptTokens: promptTokens,
+		CachedTokens: cachedTokens,
 	})
 }
 
@@ -104,6 +106,8 @@ func Query(params QueryParams) (QueryResult, error) {
 			ttftCount:      row.TtftCount,
 			outputTokens:   row.OutputTokens,
 			generationMs:   row.GenerationMs,
+			cachedTokens:   row.CachedTokens,
+			promptTokens:   row.PromptTokens,
 		})
 	}
 
@@ -147,6 +151,8 @@ func QuerySummaryAll(hours int, groups []string) (SummaryAllResult, error) {
 			totalLatencyMs: row.TotalLatencyMs,
 			outputTokens:   row.OutputTokens,
 			generationMs:   row.GenerationMs,
+			cachedTokens:   row.CachedTokens,
+			promptTokens:   row.PromptTokens,
 		}
 		mergeModelTotals(totals, row.ModelName, value)
 		mergeModelBucket(modelBuckets, row.ModelName, row.BucketTs, value)
@@ -182,12 +188,17 @@ func QuerySummaryAll(hours int, groups []string) (SummaryAllResult, error) {
 		if total.generationMs > 0 {
 			avgTps = float64(total.outputTokens) / (float64(total.generationMs) / 1000.0)
 		}
+		cacheHitRate := 0.0
+		if total.promptTokens > 0 {
+			cacheHitRate = math.Round(float64(total.cachedTokens)/float64(total.promptTokens)*10000) / 100
+		}
 		models = append(models, ModelSummary{
 			ModelName:          name,
 			AvgLatencyMs:       avgLatency,
 			SuccessRate:        math.Round(successRate*100) / 100,
 			AvgTps:             math.Round(avgTps*100) / 100,
 			RecentSuccessRates: recentSuccessRates(modelBuckets[name], 3),
+			CacheHitRate:       cacheHitRate,
 			RequestCount:       total.requestCount,
 		})
 	}
@@ -210,6 +221,8 @@ func mergeModelTotals(totals map[string]counters, modelName string, value counte
 	current.ttftCount += value.ttftCount
 	current.outputTokens += value.outputTokens
 	current.generationMs += value.generationMs
+	current.cachedTokens += value.cachedTokens
+	current.promptTokens += value.promptTokens
 	totals[modelName] = current
 }
 
@@ -228,6 +241,8 @@ func mergeModelBucket(modelBuckets map[string]map[int64]counters, modelName stri
 	current.ttftCount += value.ttftCount
 	current.outputTokens += value.outputTokens
 	current.generationMs += value.generationMs
+	current.cachedTokens += value.cachedTokens
+	current.promptTokens += value.promptTokens
 	modelBuckets[modelName][bucketTs] = current
 }
 
@@ -283,6 +298,8 @@ func mergeCounters(merged map[bucketKey]counters, key bucketKey, value counters)
 	current.ttftCount += value.ttftCount
 	current.outputTokens += value.outputTokens
 	current.generationMs += value.generationMs
+	current.cachedTokens += value.cachedTokens
+	current.promptTokens += value.promptTokens
 	merged[key] = current
 }
 
