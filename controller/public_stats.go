@@ -39,7 +39,9 @@ type TodayStatsResult struct {
 func GetTodayStats(c *gin.Context) {
 	var result TodayStatsResult
 
-	dayStart := time.Now().Truncate(24 * time.Hour).Unix()
+	// 本地时区零点（Truncate(24h) 是 UTC 纪元对齐，在 UTC+8 会切到 08:00）
+	now := time.Now()
+	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).Unix()
 	if err := model.DB.Model(&model.Log{}).
 		Where("type = ? AND created_at >= ?", model.LogTypeConsume, dayStart).
 		Select("COUNT(*) AS today_calls, COALESCE(SUM(prompt_tokens + completion_tokens), 0) AS today_tokens").
