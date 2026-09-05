@@ -5856,6 +5856,9 @@
       }
     },
     "marketPage.table.cacheHit": "Cache hit",
-    "marketPage.table.since": "Since"
+    "marketPage.table.since": "Since",
+    "Public market with live pricing and quality metrics.": "Public market with live pricing and quality metrics.",
+    "Public channel health and pricing pipeline status.": "Public channel health and pricing pipeline status.",
+    "Contributor program entry (admins always see it).": "Contributor program entry (admins always see it)."
   }
 }

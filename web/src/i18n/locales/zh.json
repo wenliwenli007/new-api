@@ -5860,6 +5860,9 @@
       }
     },
     "marketPage.table.cacheHit": "缓存命中",
-    "marketPage.table.since": "供货起"
+    "marketPage.table.since": "供货起",
+    "Public market with live pricing and quality metrics.": "公开市场：实时价格与质量指标。",
+    "Public channel health and pricing pipeline status.": "渠道健康与价格管道同步状态。",
+    "Contributor program entry (admins always see it).": "贡献者计划入口（管理员始终可见）。"
   }
 }

@@ -57,6 +57,9 @@ const headerNavSchema = z.object({
   rankingsRequireAuth: z.boolean(),
   docs: z.boolean(),
   about: z.boolean(),
+  market: z.boolean(),
+  health: z.boolean(),
+  contributor: z.boolean(),
 })
 
 type HeaderNavFormValues = z.infer<typeof headerNavSchema>
@@ -95,6 +98,9 @@ const toFormValues = (config: HeaderNavModulesConfig): HeaderNavFormValues => ({
     config.about === undefined
       ? HEADER_NAV_DEFAULT.about
       : Boolean(config.about),
+  market: Boolean(config.market ?? HEADER_NAV_DEFAULT.market),
+  health: Boolean(config.health ?? HEADER_NAV_DEFAULT.health),
+  contributor: Boolean(config.contributor ?? HEADER_NAV_DEFAULT.contributor),
 })
 
 export function HeaderNavigationSection({
@@ -121,6 +127,9 @@ export function HeaderNavigationSection({
       console: values.console,
       docs: values.docs,
       about: values.about,
+      market: values.market,
+      health: values.health,
+      contributor: values.contributor,
       pricing: {
         ...(config.pricing ?? HEADER_NAV_DEFAULT.pricing),
         enabled: values.pricingEnabled,
@@ -172,6 +181,21 @@ export function HeaderNavigationSection({
       key: 'about',
       title: t('About'),
       description: t('Static page describing the platform.'),
+    },
+    {
+      key: 'market',
+      title: t('Model Market'),
+      description: t('Public market with live pricing and quality metrics.'),
+    },
+    {
+      key: 'health',
+      title: t('Service Status'),
+      description: t('Public channel health and pricing pipeline status.'),
+    },
+    {
+      key: 'contributor',
+      title: t('Contributor Program'),
+      description: t('Contributor program entry (admins always see it).'),
     },
   ]
 

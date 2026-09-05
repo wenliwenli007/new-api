@@ -51,6 +51,9 @@ export const HEADER_NAV_DEFAULT: HeaderNavModulesConfig = {
   },
   docs: true,
   about: true,
+  market: true,
+  health: true,
+  contributor: true,
 }
 
 export const SIDEBAR_MODULES_DEFAULT: SidebarModulesAdminConfig = {
