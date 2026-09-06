@@ -83,11 +83,8 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       </Link>
 
       {/* 主区：上下流 */}
-      <div className='relative z-10 mx-auto max-w-3xl px-4 pt-20 pb-10 text-center sm:px-6'>
-        <span className='border-primary/25 bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold'>
-          {t('Welcome back')}
-        </span>
-        <h1 className='mt-4 text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl'>
+      <div className='relative z-10 mx-auto max-w-3xl px-4 pt-20 pb-8 text-center sm:px-6'>
+        <h1 className='text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl'>
           {t('One token for every official model')}
         </h1>
         <p className='text-muted-foreground mx-auto mt-3 max-w-xl text-sm leading-relaxed sm:text-[15px]'>
@@ -119,11 +116,12 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         ))}
       </div>
 
-      {/* 表单卡（居中 460px） */}
+      {/* 表单卡（居中 460px，移动端加 safe-area 底距） */}
       <div className='relative z-10 flex items-start justify-center px-4 py-8 sm:px-8'>
         <GlassSurface
           variant='shell'
           className='w-full max-w-[460px] space-y-6 p-6 sm:p-8'
+          style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
         >
           {children}
         </GlassSurface>

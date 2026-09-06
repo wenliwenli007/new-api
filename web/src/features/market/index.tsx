@@ -458,7 +458,7 @@ export function ModelMarket() {
           {/* 操作 */}
           <TableCell>
             <Link to='/sign-in' onClick={(e) => e.stopPropagation()}>
-              <Button size='sm' className='h-8 rounded-full px-4 text-xs'>
+              <Button size='sm' className='h-9 rounded-full px-4 text-xs'>
                 {t('marketPage.createToken')}
               </Button>
             </Link>
