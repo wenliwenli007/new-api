@@ -5849,10 +5849,12 @@
       },
       "hero": {
         "badge": "Official prices synced daily 08:20",
-        "title": "Turn official models into one simple API",
         "subtitle": "Direct official channels with verifiable prices and sources. One key for DeepSeek, GLM, Kimi and more. Pay-as-you-go, no plan lock-in.",
         "ctaMarket": "Browse Models",
-        "ctaConsole": "Open Console"
+        "ctaConsole": "Open Console",
+        "titleBefore": "Turn official models into ",
+        "titleGradient": "one simple API",
+        "titleAfter": ""
       }
     },
     "marketPage.table.cacheHit": "Cache hit",

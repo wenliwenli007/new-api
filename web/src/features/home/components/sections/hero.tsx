@@ -45,13 +45,17 @@ export function Hero(props: HeroProps) {
         }}
       />
 
-      {/* ✓ 官网价格每日同步徽章（badge-success 对齐原型） */}
-      <div className='bg-success/10 text-success mb-3.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-semibold'>
+      {/* ✓ 官网价格每日同步徽章（v2.5 紫主题：紫系胶囊） */}
+      <div className='border-primary/25 bg-primary/10 text-primary mb-3.5 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11.5px] font-semibold'>
         ✓ {t('home.hero.badge')}
       </div>
 
       <h1 className='text-[clamp(1.9rem,4vw,2.4rem)] leading-[1.2] font-extrabold tracking-tight'>
-        {t('home.hero.title')}
+        {t('home.hero.titleBefore')}
+        <span className='bg-gradient-to-br from-primary to-[#A855F7] bg-clip-text text-transparent'>
+          {t('home.hero.titleGradient')}
+        </span>
+        {t('home.hero.titleAfter')}
       </h1>
       <p className='text-muted-foreground mx-auto mt-3 max-w-[660px] text-[15px] leading-relaxed'>
         {t('home.hero.subtitle')}
@@ -59,7 +63,7 @@ export function Hero(props: HeroProps) {
 
       <div className='mt-6 flex flex-wrap items-center justify-center gap-2'>
         <Button
-          className='h-10 rounded-full bg-slate-900 px-[18px] text-[13.5px] font-semibold text-white hover:bg-slate-800'
+          className='h-10 rounded-full px-[18px] text-[13.5px] font-semibold'
           render={<Link to='/market' />}
         >
           {t('home.hero.ctaMarket')}

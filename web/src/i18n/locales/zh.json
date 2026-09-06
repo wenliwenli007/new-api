@@ -5853,10 +5853,12 @@
       },
       "hero": {
         "badge": "官网价格每日 08:20 自动同步",
-        "title": "把官方模型，变成一条简单的 API",
         "subtitle": "国内官方渠道直连，价格与来源都能核验。一个 Key 接入 DeepSeek、GLM、Kimi 等模型，余额按量扣除，没有套餐绑架。",
         "ctaMarket": "进入模型市场",
-        "ctaConsole": "打开控制台"
+        "ctaConsole": "打开控制台",
+        "titleBefore": "把官方模型，变成",
+        "titleGradient": "一条简单的 API",
+        "titleAfter": ""
       }
     },
     "marketPage.table.cacheHit": "缓存命中",

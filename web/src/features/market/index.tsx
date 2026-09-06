@@ -356,7 +356,7 @@ export function ModelMarket() {
                   >
                     {model.model_name}
                   </Link>
-                  <span className='bg-success/10 text-success inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10.5px] font-semibold'>
+                  <span className='border-primary/25 bg-primary/10 text-primary inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold'>
                     ✓ {t('marketPage.tag.official')}
                   </span>
                 </div>
@@ -423,7 +423,7 @@ export function ModelMarket() {
           {/* 特性标签 */}
           <TableCell>
             <div className='flex flex-wrap gap-1'>
-              <Badge variant='secondary' className='gap-1 text-[10.5px]'>
+              <Badge className='bg-primary/10 gap-1 text-[10.5px] text-primary'>
                 {t('marketPage.tag.official')}
               </Badge>
               {prices.perRequest && (
