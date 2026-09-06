@@ -5859,6 +5859,16 @@
     "marketPage.table.since": "Since",
     "Public market with live pricing and quality metrics.": "Public market with live pricing and quality metrics.",
     "Public channel health and pricing pipeline status.": "Public channel health and pricing pipeline status.",
-    "Contributor program entry (admins always see it).": "Contributor program entry (admins always see it)."
+    "Contributor program entry (admins always see it).": "Contributor program entry (admins always see it).",
+    "Welcome back": "Welcome back",
+    "One token for every official model": "One token for every official model",
+    "Manage API keys, call logs and balance after signing in. Official channels with verifiable prices.": "Manage API keys, call logs and balance after signing in. Official channels with verifiable prices.",
+    "Official channels, direct": "Official channels, direct",
+    "Sources and prices are verifiable": "Sources and prices are verifiable",
+    "OpenAI-compatible": "OpenAI-compatible",
+    "base_url needs no /v1 suffix": "base_url needs no /v1 suffix",
+    "Easy to integrate": "Easy to integrate",
+    "Two-factor authentication": "Two-factor authentication",
+    "An extra layer for sensitive actions": "An extra layer for sensitive actions"
   }
 }

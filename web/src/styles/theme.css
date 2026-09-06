@@ -20,6 +20,8 @@ For commercial licensing, please contact support@quantumnous.com
 
 @theme inline {
   --font-sans: 'Public Sans', sans-serif;
+  /* v2.5 紫主题标题字体：xiaohei-purple 品牌基因（Plus Jakarta Sans 800） */
+  --font-display: 'Plus Jakarta Sans', 'Public Sans', system-ui, sans-serif;
   /* Editorial serif token — the body face used by the `serif` font axis
    * and by presets that opt in (currently Anthropic). Lora carries only
    * Latin glyphs, so the stack walks through CJK serifs (Noto / Source Han
@@ -83,6 +85,7 @@ For commercial licensing, please contact support@quantumnous.com
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-display: var(--font-display);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -109,10 +112,11 @@ For commercial licensing, please contact support@quantumnous.com
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.692 0.141 243.716);
+  /* v2.5 品牌主色：xiaohei-purple 深紫 #6D28D9（M6 紫主题改版） */
+  --primary: oklch(0.491 0.241 292.6);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.95 0 0);
-  --secondary-foreground: oklch(0.42 0.16 250);
+  --secondary-foreground: oklch(0.42 0.16 292);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.49 0 0);
   --accent: color-mix(in oklch, var(--primary) 12%, var(--background));
@@ -130,10 +134,11 @@ For commercial licensing, please contact support@quantumnous.com
   --border: oklch(0.93 0 0);
   --input: oklch(0.93 0 0);
   --ring: oklch(0.708 0.16 249.003);
-  --chart-1: oklch(0.72 0.18 250);
-  --chart-2: oklch(0.65 0.15 200);
-  --chart-3: oklch(0.7 0.12 280);
-  --chart-4: oklch(0.68 0.19 325);
+  /* v2.5 紫主题光晕：右上紫罗兰、底部靛紫（原蓝/粉改紫系） */
+  --chart-1: oklch(0.72 0.18 292);
+  --chart-2: oklch(0.65 0.15 296);
+  --chart-3: oklch(0.7 0.12 294);
+  --chart-4: oklch(0.68 0.19 288);
   --chart-5: oklch(0.68 0.16 155);
   --overview-accent-1: oklch(0.72 0.18 250);
   --overview-accent-2: oklch(0.65 0.15 200);
@@ -186,10 +191,11 @@ For commercial licensing, please contact support@quantumnous.com
   --card-foreground: oklch(0.965 0 0);
   --popover: oklch(0.305 0 0);
   --popover-foreground: oklch(0.965 0 0);
-  --primary: oklch(0.54 0.142 248.516);
+  /* v2.5 暗色主色：xiaohei-purple 亮紫 #8B5CF6 */
+  --primary: oklch(0.585 0.211 293.2);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.335 0 0);
-  --secondary-foreground: oklch(0.9 0.05 250);
+  --secondary-foreground: oklch(0.9 0.05 292);
   --muted: oklch(0.305 0 0);
   --muted-foreground: oklch(0.78 0 0);
   --accent: color-mix(in oklch, var(--primary) 20%, var(--background));

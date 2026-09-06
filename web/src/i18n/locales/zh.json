@@ -5863,6 +5863,16 @@
     "marketPage.table.since": "供货起",
     "Public market with live pricing and quality metrics.": "公开市场：实时价格与质量指标。",
     "Public channel health and pricing pipeline status.": "渠道健康与价格管道同步状态。",
-    "Contributor program entry (admins always see it).": "贡献者计划入口（管理员始终可见）。"
+    "Contributor program entry (admins always see it).": "贡献者计划入口（管理员始终可见）。",
+    "Welcome back": "欢迎回来",
+    "One token for every official model": "一个令牌，连接全部官方模型",
+    "Manage API keys, call logs and balance after signing in. Official channels with verifiable prices.": "登录后管理 API Key、调用日志与余额。官方渠道直连，价格与来源都能核验。",
+    "Official channels, direct": "官方渠道直连",
+    "Sources and prices are verifiable": "来源与价格均可核验",
+    "OpenAI-compatible": "OpenAI 兼容",
+    "base_url needs no /v1 suffix": "base_url 无需附加 /v1",
+    "Easy to integrate": "易接入",
+    "Two-factor authentication": "两步验证",
+    "An extra layer for sensitive actions": "敏感操作增加一层保护"
   }
 }
