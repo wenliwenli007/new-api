@@ -121,6 +121,23 @@ function getDisplayCurrency(): 'CNY' | 'USD' {
   return 'CNY'
 }
 
+function useDisplayCurrency(): 'CNY' | 'USD' {
+  const [cur, setCur] = React.useState<'CNY' | 'USD'>(getDisplayCurrency)
+
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.currency === 'CNY' || detail?.currency === 'USD') {
+        setCur(detail.currency)
+      }
+    }
+    window.addEventListener('display-currency-change', handler)
+    return () => window.removeEventListener('display-currency-change', handler)
+  }, [])
+
+  return cur
+}
+
 function setDisplayCurrency(cur: 'CNY' | 'USD') {
   localStorage.setItem(CURRENCY_KEY, cur)
   window.dispatchEvent(
@@ -129,16 +146,7 @@ function setDisplayCurrency(cur: 'CNY' | 'USD') {
 }
 
 function CurrencyDisplayToggle({ className }: { className?: string }) {
-  const [cur, setCur] = React.useState<'CNY' | 'USD'>(getDisplayCurrency)
-
-  React.useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail
-      if (detail?.currency) setCur(detail.currency)
-    }
-    window.addEventListener('display-currency-change', handler)
-    return () => window.removeEventListener('display-currency-change', handler)
-  }, [])
+  const cur = useDisplayCurrency()
 
   return (
     <div
@@ -184,6 +192,7 @@ export {
   SuccessBars,
   CurrencyDisplayToggle,
   getDisplayCurrency,
+  useDisplayCurrency,
   setDisplayCurrency,
   CURRENCY_KEY,
 }

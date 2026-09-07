@@ -87,7 +87,27 @@ func TestSnapshotSorted(t *testing.T) {
 	}
 }
 
-func TestRoundTripThroughConfigJSON(t *testing.T) {
+func TestRoundTripPreservesRegion(t *testing.T) {
+	table := map[string]OfficialPrice{
+		"kimi-k3": {Input: 20, Output: 100, Region: "domestic"},
+		"claude-opus-5": {Input: 5, Output: 25, Region: "international"},
+	}
+	payload, err := json.Marshal(table)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if err := Reload(string(payload)); err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if p, ok := GetPrice("kimi-k3"); !ok || !p.IsDomestic() {
+		t.Fatalf("domestic region lost: %+v ok=%v", p, ok)
+	}
+	if p, ok := GetPrice("claude-opus-5"); !ok || p.IsDomestic() {
+		t.Fatalf("international region changed: %+v ok=%v", p, ok)
+	}
+}
+
+
 	// 导入管道写入的是整表 JSON；确认它可被 Reload 原样解析回来。
 	table := map[string]OfficialPrice{
 		"deepseek-v4-flash": {Input: 0.44, Output: 1.32, CachedInput: 0.02, CacheWrite: 0.44, VerifiedOn: "2026-09-01"},

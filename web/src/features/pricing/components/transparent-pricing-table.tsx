@@ -10,6 +10,12 @@ import { ExternalLink } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { StatusBadge } from '@/components/status-badge'
+import {
+  formatDisplayAmount,
+  getDisplayCurrency,
+  getDisplayExchangeRate,
+  getOfficialPriceCny,
+} from '@/lib/display-currency'
 import type { OfficialPricingEntry } from '@/features/channels/components/pricing/types'
 
 import { DEFAULT_TOKEN_UNIT } from '../constants'
@@ -29,11 +35,16 @@ export interface TransparentPricingTableProps {
 
 function formatOfficialPrice(
   entry: OfficialPricingEntry | undefined,
-  field: 'input' | 'output'
+  field: 'input' | 'output',
+  displayCurrency: 'CNY' | 'USD',
+  displayExchangeRate: number
 ) {
   if (!entry || !Number.isFinite(entry[field])) return '—'
-  const prefix = entry.region === 'domestic' ? '¥' : '$'
-  return `${prefix}${entry[field].toFixed(2)}`
+  const cny = getOfficialPriceCny(
+    { input: entry.input, output: entry.output, region: entry.region },
+    displayExchangeRate
+  )[field]
+  return formatDisplayAmount(cny, displayCurrency, displayExchangeRate, 2)
 }
 
 export function TransparentPricingTable({
@@ -46,6 +57,8 @@ export function TransparentPricingTable({
   onModelClick,
 }: TransparentPricingTableProps) {
   const { t } = useTranslation()
+  const displayCurrency = getDisplayCurrency()
+  const displayExchangeRate = getDisplayExchangeRate()
 
   return (
     <div className='space-y-3'>
@@ -131,10 +144,10 @@ export function TransparentPricingTable({
                     )}
                   </td>
                   <td className='px-4 py-3 text-right font-mono text-xs tabular-nums'>
-                    {formatOfficialPrice(official, 'input')}
+                    {formatOfficialPrice(official, 'input', displayCurrency, displayExchangeRate)}
                   </td>
                   <td className='px-4 py-3 text-right font-mono text-xs tabular-nums'>
-                    {formatOfficialPrice(official, 'output')}
+                    {formatOfficialPrice(official, 'output', displayCurrency, displayExchangeRate)}
                   </td>
                   <td className='px-4 py-3 text-right font-mono text-xs tabular-nums'>
                     {tokenBased ? `×${model.model_ratio.toFixed(2)}` : '—'}

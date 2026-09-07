@@ -45,6 +45,11 @@ import { GlassSurface } from '@/components/ui/v2-surfaces'
 import { CurrencyDisplayToggle, FilterChip, getDisplayCurrency, SuccessBars } from '@/components/ui/v2-widgets'
 import { KVRow, MetricBar } from '@/components/ui/v2-reference'
 import { VendorIcon } from '@/components/ui/vendor-icon'
+import {
+  formatDisplayAmount,
+  getDisplayExchangeRate,
+  getOfficialPriceCny,
+} from '@/lib/display-currency'
 import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
 import {
   Table,
@@ -60,7 +65,6 @@ import { usePricingData } from '@/features/pricing/hooks'
 import type { PricingModel } from '@/features/pricing/types'
 
 import {
-  computeDisplayedPrice,
   getOfficialPrice,
   type OfficialTokenPrice,
 } from './official-pricing'
@@ -103,7 +107,8 @@ type ComputedPrices = {
 /** Compute display prices using the live USD exchange rate. */
 function computePrices(
   model: PricingModel,
-  usdExchangeRate: number | undefined,
+  canonicalExchangeRate: number | undefined,
+  displayExchangeRate: number,
   officialSnapshot: Record<string, OfficialPricingEntry> = {}
 ): ComputedPrices {
   const official = officialFromSnapshot(
@@ -113,8 +118,8 @@ function computePrices(
   if (model.quota_type === QUOTA_TYPE_VALUES.REQUEST) {
     return {
       input:
-        typeof usdExchangeRate === 'number' && usdExchangeRate > 0
-          ? (model.model_price || 0) * usdExchangeRate
+        typeof canonicalExchangeRate === 'number' && canonicalExchangeRate > 0
+          ? (model.model_price || 0) * canonicalExchangeRate
           : Number.NaN,
       output: null,
       perRequest: true,
@@ -125,18 +130,33 @@ function computePrices(
   const modelRatio = model.model_ratio || 0
   const completionRatio = model.completion_ratio || 1
   const validRate =
-    typeof usdExchangeRate === 'number' &&
-    Number.isFinite(usdExchangeRate) &&
-    usdExchangeRate > 0
-  const displayed = official && validRate
-    ? computeDisplayedPrice(modelRatio, completionRatio, usdExchangeRate, official)
+    typeof canonicalExchangeRate === 'number' &&
+    Number.isFinite(canonicalExchangeRate) &&
+    canonicalExchangeRate > 0
+  const siteInputCny = validRate ? modelRatio * 2 * canonicalExchangeRate : Number.NaN
+  const siteOutputCny = validRate
+    ? modelRatio * 2 * completionRatio * canonicalExchangeRate
+    : Number.NaN
+  const officialCny = official
+    ? getOfficialPriceCny(
+        {
+          input: official.inputUsdPerMillion,
+          output: official.outputUsdPerMillion,
+          region: official.domesticRegion ? 'domestic' : 'international',
+        },
+        displayExchangeRate
+      )
     : null
+  const effectiveOfficialMultiplier =
+    officialCny && Number.isFinite(siteInputCny)
+      ? siteInputCny / officialCny.input
+      : null
   return {
-    input: validRate ? modelRatio * 2 * usdExchangeRate : Number.NaN,
-    output: validRate ? modelRatio * 2 * completionRatio * usdExchangeRate : Number.NaN,
+    input: siteInputCny,
+    output: siteOutputCny,
     perRequest: false,
     official,
-    effectiveOfficialMultiplier: displayed?.effectiveOfficialMultiplier ?? null,
+    effectiveOfficialMultiplier,
   }
 }
 
@@ -212,11 +232,12 @@ export function ModelMarket() {
     return map
   }, [perfQuery.data])
 
-  const usdExchangeRate = status?.usd_exchange_rate
+  const canonicalExchangeRate = status?.usd_exchange_rate
+  const displayExchangeRate = getDisplayExchangeRate()
   const hasExchangeRate =
-    typeof usdExchangeRate === 'number' &&
-    Number.isFinite(usdExchangeRate) &&
-    usdExchangeRate > 0
+    typeof canonicalExchangeRate === 'number' &&
+    Number.isFinite(canonicalExchangeRate) &&
+    canonicalExchangeRate > 0
 
   const defaultGroupModels = useMemo(
     () =>
@@ -270,8 +291,8 @@ export function ModelMarket() {
 
   // ¥/$ 显示换算：内部价为 CNY，USD = CNY ÷ 实时汇率
   const fmtPrice = (cny: number) =>
-    currency === 'USD' && hasExchangeRate
-      ? formatUsd(cny / (usdExchangeRate as number))
+    currency === 'USD'
+      ? formatUsd(cny / displayExchangeRate)
       : formatCny(cny)
 
   const baseUrl = `${window.location.origin}/v1`
@@ -315,7 +336,12 @@ export function ModelMarket() {
     }
 
     return visibleModels.map((model) => {
-      const prices = computePrices(model, usdExchangeRate, officialPricing)
+      const prices = computePrices(
+        model,
+        canonicalExchangeRate,
+        displayExchangeRate,
+        officialPricing
+      )
       const open = openModel === model.model_name
       const perf = perfMap.get(model.model_name)
       const recent = perf?.recent?.filter((r) => Number.isFinite(r)) ?? []
@@ -330,7 +356,7 @@ export function ModelMarket() {
       // 本站缓存读价 = ratio × 2 × cache_ratio × 汇率（真实字段）
       const cacheReadCny =
         !prices.perRequest && model.cache_ratio
-          ? (model.model_ratio || 0) * 2 * model.cache_ratio * (usdExchangeRate ?? 0)
+          ? (model.model_ratio || 0) * 2 * model.cache_ratio * (canonicalExchangeRate ?? 0)
           : null
       // 官网缓存命中价（official_pricing 快照真实字段）
       const officialEntry = officialPricing[model.model_name?.toLowerCase?.()]
@@ -483,20 +509,50 @@ export function ModelMarket() {
                     <>
                       <KVRow
                         k={t('marketPage.detail.officialInput')}
-                        v={prices.official.domesticRegion ? formatCny(prices.official.inputUsdPerMillion) : formatUsd(prices.official.inputUsdPerMillion)}
+                        v={formatDisplayAmount(
+                          getOfficialPriceCny(
+                            {
+                              input: prices.official.inputUsdPerMillion,
+                              output: prices.official.outputUsdPerMillion,
+                              region: prices.official.domesticRegion ? 'domestic' : 'international',
+                            },
+                            displayExchangeRate
+                          ).input,
+                          currency,
+                          displayExchangeRate,
+                          2
+                        )}
                       />
                       <KVRow
                         k={t('marketPage.detail.officialCache')}
                         v={(() => {
                           if (officialCache == null) return '—'
-                          return prices.official.domesticRegion
-                            ? formatCny(officialCache)
-                            : formatUsd(officialCache)
+                          const officialCny = prices.official.domesticRegion
+                            ? officialCache
+                            : officialCache * displayExchangeRate
+                          return formatDisplayAmount(
+                            officialCny,
+                            currency,
+                            displayExchangeRate,
+                            2
+                          )
                         })()}
                       />
                       <KVRow
                         k={t('marketPage.detail.officialOutput')}
-                        v={prices.official.domesticRegion ? formatCny(prices.official.outputUsdPerMillion) : formatUsd(prices.official.outputUsdPerMillion)}
+                        v={formatDisplayAmount(
+                          getOfficialPriceCny(
+                            {
+                              input: prices.official.inputUsdPerMillion,
+                              output: prices.official.outputUsdPerMillion,
+                              region: prices.official.domesticRegion ? 'domestic' : 'international',
+                            },
+                            displayExchangeRate
+                          ).output,
+                          currency,
+                          displayExchangeRate,
+                          2
+                        )}
                       />
                       <KVRow k={t('marketPage.detail.siteInput')} v={hasExchangeRate ? fmtPrice(prices.input) : '—'} highlight />
                       <KVRow k={t('marketPage.detail.siteCache')} v={cacheReadCny && hasExchangeRate ? fmtPrice(cacheReadCny) : '—'} />
@@ -632,7 +688,7 @@ export function ModelMarket() {
                       title={m.model_name}
                       subtitle={
                         hasExchangeRate
-                          ? `${t('marketPage.table.input')} ${fmtPrice((m.model_ratio || 0) * 2 * (usdExchangeRate ?? 0))}/1M`
+                          ? `${t('marketPage.table.input')} ${fmtPrice((m.model_ratio || 0) * 2 * (canonicalExchangeRate ?? 0))}/1M`
                           : undefined
                       }
                       active={search === m.model_name}

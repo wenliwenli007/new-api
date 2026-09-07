@@ -24,7 +24,7 @@ import { PageTransition } from '@/components/page-transition'
 import { Button } from '@/components/ui/button'
 import { ReferenceSystemCard } from '@/components/ui/v2-reference'
 import { GlassSurface } from '@/components/ui/v2-surfaces'
-import { FilterChip } from '@/components/ui/v2-widgets'
+import { FilterChip, CurrencyDisplayToggle, useDisplayCurrency } from '@/components/ui/v2-widgets'
 import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
 
 import {
@@ -44,6 +44,8 @@ import { usePricingData } from './hooks/use-pricing-data'
 
 export function Pricing() {
   const { t } = useTranslation()
+  // Subscribe the pricing tree to the shared user-level ¥/$ preference.
+  useDisplayCurrency()
   const [selectedModelName, setSelectedModelName] = useState<string | null>(
     null
   )
@@ -272,7 +274,9 @@ export function Pricing() {
                 ))}
               </div>
             )}
-            <div className='bg-muted/40 mx-auto mt-5 inline-flex rounded-full border p-1'>
+            <div className='mt-5 inline-flex items-center gap-2'>
+              <CurrencyDisplayToggle />
+              <div className='bg-muted/40 inline-flex rounded-full border p-1'>
               <Button
                 size='sm'
                 variant={pricingView === 'market' ? 'default' : 'ghost'}
@@ -289,6 +293,7 @@ export function Pricing() {
               >
                 {t('定价透明')}
               </Button>
+              </div>
             </div>
           </header>
 

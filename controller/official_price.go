@@ -220,6 +220,12 @@ func ImportOfficialPricing(c *gin.Context) {
 			SourceURL:    req.SourceURL,
 			VerifiedOn:   today,
 		}
+		if hasOld {
+			// Preserve the reference currency when ratio sync re-imports a record.
+			// Domestic prices are already CNY; dropping Region would silently
+			// reinterpret them as international USD on the next reload.
+			price.Region = existing.Region
+		}
 		if cr, ok := cacheMap[name]; ok && cr > 0 {
 			price.CachedInput = input * cr
 			price.CacheWrite = input

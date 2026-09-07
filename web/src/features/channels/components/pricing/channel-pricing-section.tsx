@@ -122,11 +122,13 @@ function ModelPricingBlock({
 
   const officialCny = useMemo(() => {
     if (!official) return null
+    const isDomestic = official.region?.trim().toLowerCase() === 'domestic'
+    const toCny = (value: number) => (isDomestic ? value : value * exchangeRate)
     return {
-      input: official.input * exchangeRate,
-      output: official.output * exchangeRate,
-      cachedInput: (official.cached_input ?? 0) * exchangeRate,
-      cacheWrite: (official.cache_write ?? official.input) * exchangeRate,
+      input: toCny(official.input),
+      output: toCny(official.output),
+      cachedInput: toCny(official.cached_input ?? 0),
+      cacheWrite: toCny(official.cache_write ?? official.input),
     }
   }, [official, exchangeRate])
 
