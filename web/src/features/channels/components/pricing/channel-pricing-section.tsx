@@ -185,7 +185,9 @@ function ModelPricingBlock({
         output != null && input > 0 ? Number((output / input).toFixed(4)) : null,
       cacheRatio:
         value.cachedInput != null && input > 0
-          ? Number((cnyToUsdPerMillion(value.cachedInput, exchangeRate)! / input).toFixed(4))
+          ? Number(
+              ((cnyToUsdPerMillion(value.cachedInput, exchangeRate) ?? 0) / input).toFixed(4)
+            )
           : null,
     }
   }, [value, exchangeRate])
