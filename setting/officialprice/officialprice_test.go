@@ -108,6 +108,7 @@ func TestRoundTripPreservesRegion(t *testing.T) {
 }
 
 
+func TestRoundTripThroughConfigJSON(t *testing.T) {
 	// 导入管道写入的是整表 JSON；确认它可被 Reload 原样解析回来。
 	table := map[string]OfficialPrice{
 		"deepseek-v4-flash": {Input: 0.44, Output: 1.32, CachedInput: 0.02, CacheWrite: 0.44, VerifiedOn: "2026-09-01"},
