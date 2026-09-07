@@ -63,6 +63,7 @@ import {
 } from '../../hooks/use-status-data'
 import { AnnouncementsPanel } from './announcements-panel'
 import { ApiInfoPanel } from './api-info-panel'
+import { ConsoleWelcome } from './console-welcome'
 import { FAQPanel } from './faq-panel'
 import { PerformanceHealthPanel } from './performance-health-panel'
 import { SummaryCards } from './summary-cards'
@@ -619,7 +620,9 @@ export function OverviewDashboard() {
   }
 
   return (
-    <GlassSurface variant='shell' className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-4'>
+      <ConsoleWelcome />
+      <GlassSurface variant='shell' className='flex flex-col gap-4'>
       {setupGuideExpanded ? (
         <CardStaggerContainer className='grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
           <CardStaggerItem className='bg-card h-full overflow-hidden rounded-2xl border shadow-xs'>
@@ -798,6 +801,7 @@ export function OverviewDashboard() {
           )}
         </CardStaggerContainer>
       )}
-    </GlassSurface>
+      </GlassSurface>
+    </div>
   )
 }

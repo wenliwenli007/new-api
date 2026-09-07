@@ -48,19 +48,9 @@ export const THEME_PRESETS = [
     swatches: ['oklch(0.5315 0.0694 156.19)', 'oklch(0.5748 0.0862 336.52)'],
   },
   {
-    value: 'rose-garden',
-    name: 'Rose Garden',
-    swatches: ['oklch(0.5827 0.2418 12.23)', 'oklch(0.8131 0.1129 5.67)'],
-  },
-  {
     value: 'lake-view',
     name: 'Lake View',
     swatches: ['oklch(0.765 0.177 163.22)', 'oklch(0.551 0.0899 200.52)'],
-  },
-  {
-    value: 'sunset-glow',
-    name: 'Sunset Glow',
-    swatches: ['oklch(0.5591 0.1882 25.33)', 'oklch(0.7938 0.1248 42.42)'],
   },
   {
     value: 'forest-whisper',

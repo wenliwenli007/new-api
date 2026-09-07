@@ -29,3 +29,4 @@ export {
   ModelDetailsDrawer,
 } from './model-details'
 export { PricingTable } from './pricing-table'
+export { TransparentPricingTable } from './transparent-pricing-table'

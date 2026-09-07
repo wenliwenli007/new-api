@@ -21,9 +21,10 @@ import { useTranslation } from 'react-i18next'
 
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
-import { FilterChip } from '@/components/ui/v2-widgets'
+import { Button } from '@/components/ui/button'
 import { ReferenceSystemCard } from '@/components/ui/v2-reference'
 import { GlassSurface } from '@/components/ui/v2-surfaces'
+import { FilterChip } from '@/components/ui/v2-widgets'
 import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
 
 import {
@@ -35,6 +36,7 @@ import {
   PricingToolbar,
   ModelCardGrid,
   ModelDetailsDrawer,
+  TransparentPricingTable,
 } from './components'
 import { EXCLUDED_GROUPS, FILTER_ALL, VIEW_MODES } from './constants'
 import { useFilters } from './hooks/use-filters'
@@ -44,6 +46,9 @@ export function Pricing() {
   const { t } = useTranslation()
   const [selectedModelName, setSelectedModelName] = useState<string | null>(
     null
+  )
+  const [pricingView, setPricingView] = useState<'market' | 'transparent'>(
+    'market'
   )
 
   const {
@@ -66,7 +71,7 @@ export function Pricing() {
       .map((e) => e.verified_on)
       .filter(Boolean)
       .sort()
-    return dates[dates.length - 1] || ''
+    return dates.at(-1) || ''
   }, [officialPricing])
 
   const vendorChips = useMemo(() => {
@@ -142,6 +147,20 @@ export function Pricing() {
           searchQuery={searchInput}
           hasActiveFilters={hasActiveFilters}
           onClearFilters={handleClearAll}
+        />
+      )
+    }
+
+    if (pricingView === 'transparent') {
+      return (
+        <TransparentPricingTable
+          models={filteredModels}
+          officialPricing={officialPricing}
+          priceRate={priceRate}
+          usdExchangeRate={usdExchangeRate}
+          tokenUnit={tokenUnit}
+          selectedGroup={groupFilter}
+          onModelClick={handleModelClick}
         />
       )
     }
@@ -228,8 +247,8 @@ export function Pricing() {
 
             {/* v2: 官网价格管道同步状态条（真实快照数据） */}
             {officialCount > 0 && (
-              <div className='mx-auto mt-4 flex w-fit items-center gap-2 rounded-full bg-success/10 px-4 py-1.5 text-xs font-semibold text-success'>
-                <span className='size-1.5 rounded-full bg-success' />
+              <div className='bg-success/10 text-success mx-auto mt-4 flex w-fit items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold'>
+                <span className='bg-success size-1.5 rounded-full' />
                 {t('Price pipeline synced', {
                   date: latestVerified,
                   count: officialCount,
@@ -247,14 +266,30 @@ export function Pricing() {
                     subtitle={t('{{count}} models', { count })}
                     active={vendorFilter === name}
                     onClick={() =>
-                      setVendorFilter(
-                        vendorFilter === name ? FILTER_ALL : name
-                      )
+                      setVendorFilter(vendorFilter === name ? FILTER_ALL : name)
                     }
                   />
                 ))}
               </div>
             )}
+            <div className='bg-muted/40 mx-auto mt-5 inline-flex rounded-full border p-1'>
+              <Button
+                size='sm'
+                variant={pricingView === 'market' ? 'default' : 'ghost'}
+                className='h-8 rounded-full px-4 text-xs'
+                onClick={() => setPricingView('market')}
+              >
+                {t('模型广场')}
+              </Button>
+              <Button
+                size='sm'
+                variant={pricingView === 'transparent' ? 'default' : 'ghost'}
+                className='h-8 rounded-full px-4 text-xs'
+                onClick={() => setPricingView('transparent')}
+              >
+                {t('定价透明')}
+              </Button>
+            </div>
           </header>
 
           <div className='grid gap-4 xl:grid-cols-[330px_minmax(0,1fr)]'>
