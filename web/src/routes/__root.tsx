@@ -123,20 +123,30 @@ export const Route = createRootRouteWithContext<{
     const pathname = location?.pathname || ''
     const needsSetupCheck =
       !setupStatusChecked && !pathname.startsWith('/setup')
-    const authBootstrap = bootstrapAuthentication()
 
-    // 只检查 setup 状态（如果需要）
+    // Authentication is bootstrapped in the background for public routes.
+    // Protected routes await the same refresh in their own route guard.
+    // Setup must remain independent while the instance is being initialized.
+    if (!pathname.startsWith('/setup')) {
+      void bootstrapAuthentication().catch((error) => {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            '[root.beforeLoad] authentication bootstrap failed',
+            error
+          )
+        }
+      })
+    }
+
     if (needsSetupCheck) {
-      const [status] = await Promise.all([
-        getSetupStatus().catch((error) => {
-          if (import.meta.env.DEV) {
-            // eslint-disable-next-line no-console
-            console.warn('[root.beforeLoad] setup status check failed', error)
-          }
-          return null
-        }),
-        authBootstrap,
-      ])
+      const status = await getSetupStatus().catch((error) => {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.warn('[root.beforeLoad] setup status check failed', error)
+        }
+        return null
+      })
 
       if (status?.success && status.data) {
         if (!status.data.status) {
@@ -144,8 +154,6 @@ export const Route = createRootRouteWithContext<{
         }
         setupStatusChecked = true
       }
-    } else {
-      await authBootstrap
     }
   },
   component: RootComponent,

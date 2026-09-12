@@ -3002,10 +3002,12 @@
     "充值 / 兑换码": "Top up / redeem code",
     "本月消费": "This month's usage",
     "本月调用统计": "This month's call statistics",
+    "本月调用次数": "This month's call count",
     "可用令牌": "Available tokens",
     "管理令牌": "Manage tokens",
     "最近调用": "Recent calls",
     "最近 7 天的真实调用聚合数据": "Aggregated real calls from the last 7 days",
+    "最近 7 天的真实调用数据": "Real call logs from the last 7 days",
     "查看全部日志": "View all logs",
     "时间": "Time",
     "模型": "Model",
@@ -5846,6 +5848,10 @@
     "marketPage.searchPlaceholder": "Search models…",
     "marketPage.resetFilters": "Reset filters",
     "marketPage.detail.origin": "Origin",
+    "marketPage.noResults": "No models match. Try adjusting the filters.",
+    "marketPage.pagination.summary": "{{total}} models · Page {{page}}/{{pages}}",
+    "marketPage.pagination.prev": "Previous",
+    "marketPage.pagination.next": "Next",
     "home": {
       "dev": {
         "title": "For developers",

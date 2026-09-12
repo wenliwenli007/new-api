@@ -16,35 +16,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { BrandMark } from './brand-mark'
 
-interface HeaderLogoProps {
-  src: string
-  alt?: string
-  name?: string
-  loading: boolean
-  logoLoaded: boolean
-  className?: string
+export function getPageCount(total: number, pageSize: number): number {
+  if (total <= 0) return 1
+  return Math.ceil(total / pageSize)
 }
 
-/** Shared compatibility wrapper for header brand marks. */
-export function HeaderLogo({
-  src,
-  alt = 'logo',
-  name,
-  loading,
-  logoLoaded,
-  className,
-}: HeaderLogoProps) {
-  return (
-    <BrandMark
-      src={src}
-      name={name}
-      alt={alt}
-      loading={loading}
-      logoLoaded={logoLoaded}
-      variant='header'
-      className={className}
-    />
-  )
+export function clampPage(page: number, pageCount: number): number {
+  return Math.min(Math.max(1, page), Math.max(1, pageCount))
+}
+
+export function paginateItems<T>(
+  items: T[],
+  page: number,
+  pageSize: number
+): T[] {
+  const safePage = clampPage(page, getPageCount(items.length, pageSize))
+  return items.slice((safePage - 1) * pageSize, safePage * pageSize)
 }

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 /*
 Copyright (C) 2023-2026 QuantumNous
 
@@ -17,19 +18,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
-import {
-  HeartPulse,
-  KeyRound,
-  Plug,
-  RefreshCw,
-  UserPlus,
-} from 'lucide-react'
+import { HeartPulse, KeyRound, Plug, RefreshCw, UserPlus } from 'lucide-react'
 import { useEffect, useMemo, useState, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
 
-import { useStatus } from '@/hooks/use-status'
-import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
 import { PublicLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -41,16 +33,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { GlassSurface } from '@/components/ui/v2-surfaces'
-import { CurrencyDisplayToggle, FilterChip, getDisplayCurrency, SuccessBars } from '@/components/ui/v2-widgets'
-import { KVRow, MetricBar } from '@/components/ui/v2-reference'
-import { VendorIcon } from '@/components/ui/vendor-icon'
-import {
-  formatDisplayAmount,
-  getDisplayExchangeRate,
-  getOfficialPriceCny,
-} from '@/lib/display-currency'
-import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
 import {
   Table,
   TableBody,
@@ -59,19 +41,34 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
-import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
-import { usePricingData } from '@/features/pricing/hooks'
-import type { PricingModel } from '@/features/pricing/types'
-
+import { KVRow, MetricBar } from '@/components/ui/v2-reference'
+import { GlassSurface } from '@/components/ui/v2-surfaces'
 import {
-  getOfficialPrice,
-  type OfficialTokenPrice,
-} from './official-pricing'
+  CurrencyDisplayToggle,
+  FilterChip,
+  getDisplayCurrency,
+  SuccessBars,
+} from '@/components/ui/v2-widgets'
+import { VendorIcon } from '@/components/ui/vendor-icon'
 import {
   isDomesticPrice,
   type OfficialPricingEntry,
 } from '@/features/channels/components/pricing/types'
+import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
+import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
+import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
+import { usePricingData } from '@/features/pricing/hooks'
+import type { PricingModel } from '@/features/pricing/types'
+import { useStatus } from '@/hooks/use-status'
+import {
+  formatDisplayAmount,
+  getDisplayExchangeRate,
+  getOfficialPriceCny,
+} from '@/lib/display-currency'
+import { useAuthStore } from '@/stores/auth-store'
+
+import { clampPage, getPageCount, paginateItems } from './lib/pagination'
+import { getOfficialPrice, type OfficialTokenPrice } from './official-pricing'
 
 const DEFAULT_GROUP = 'default'
 
@@ -128,12 +125,14 @@ function computePrices(
     }
   }
   const modelRatio = model.model_ratio || 0
-  const completionRatio = model.completion_ratio || 1
+  const completionRatio = model.completion_ratio ?? 1
   const validRate =
     typeof canonicalExchangeRate === 'number' &&
     Number.isFinite(canonicalExchangeRate) &&
     canonicalExchangeRate > 0
-  const siteInputCny = validRate ? modelRatio * 2 * canonicalExchangeRate : Number.NaN
+  const siteInputCny = validRate
+    ? modelRatio * 2 * canonicalExchangeRate
+    : Number.NaN
   const siteOutputCny = validRate
     ? modelRatio * 2 * completionRatio * canonicalExchangeRate
     : Number.NaN
@@ -179,13 +178,27 @@ function formatMultiplier(value: number): string {
 
 function formatContext(v?: number): string {
   if (!v || !Number.isFinite(v)) return '—'
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(v % 1_000_000 ? 1 : 0)}M`
+  if (v >= 1_000_000) {
+    return `${(v / 1_000_000).toFixed(v % 1_000_000 ? 1 : 0)}M`
+  }
   if (v >= 1_000) return `${Math.round(v / 1_000)}K`
   return String(v)
 }
 
 const SKELETON_ROWS = ['row-a', 'row-b', 'row-c']
-const SKELETON_CELLS = ['m', 'in', 'out', 'ratio', 'succ', 'tags', 'lat', 'act']
+const SKELETON_CELLS = [
+  'm',
+  'in',
+  'out',
+  'ratio',
+  'succ',
+  'tags',
+  'cache',
+  'lat',
+  'since',
+  'act',
+]
+const PAGE_SIZE = 10
 
 export function ModelMarket() {
   const { t } = useTranslation()
@@ -199,6 +212,34 @@ export function ModelMarket() {
   const [billingFilter, setBillingFilter] = useState('')
   const [sortBy, setSortBy] = useState('')
   const [currency, setCurrency] = useState<'CNY' | 'USD'>(getDisplayCurrency)
+  const [pageState, setPageState] = useState(1)
+  const { auth } = useAuthStore()
+  const isAuthenticated = Boolean(auth.user)
+
+  // 筛选/排序变化时回到第一页
+  const applySearch = (v: string) => {
+    setSearch(v)
+    setPageState(1)
+  }
+  const applyBrandFilter = (v: string | null) => {
+    setBrandFilter(v)
+    setPageState(1)
+  }
+  const applyBillingFilter = (v: string) => {
+    setBillingFilter(v)
+    setPageState(1)
+  }
+  const applySortBy = (v: string) => {
+    setSortBy(v)
+    setPageState(1)
+  }
+  const resetAllFilters = () => {
+    setSearch('')
+    setBrandFilter(null)
+    setBillingFilter('')
+    setSortBy('')
+    setPageState(1)
+  }
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -219,7 +260,12 @@ export function ModelMarket() {
   const perfMap = useMemo(() => {
     const map = new Map<
       string,
-      { rate: number; latencyMs: number; recent?: number[]; cacheHitRate?: number }
+      {
+        rate: number
+        latencyMs: number
+        recent?: number[]
+        cacheHitRate?: number
+      }
     >()
     for (const p of perfQuery.data?.data.models ?? []) {
       map.set(p.model_name, {
@@ -281,7 +327,8 @@ export function ModelMarket() {
       const keyFns: Record<string, (m: PricingModel) => number> = {
         ratio: (m) => m.model_ratio || 0,
         input: (m) => (m.model_ratio || 0) * 2,
-        latency: (m) => perfMap.get(m.model_name)?.latencyMs ?? Number.MAX_VALUE,
+        latency: (m) =>
+          perfMap.get(m.model_name)?.latencyMs ?? Number.MAX_VALUE,
       }
       const fn = keyFns[sortBy]
       if (fn) list = [...list].sort((a, b) => fn(a) - fn(b))
@@ -291,12 +338,16 @@ export function ModelMarket() {
 
   // ¥/$ 显示换算：内部价为 CNY，USD = CNY ÷ 实时汇率
   const fmtPrice = (cny: number) =>
-    currency === 'USD'
-      ? formatUsd(cny / displayExchangeRate)
-      : formatCny(cny)
+    currency === 'USD' ? formatUsd(cny / displayExchangeRate) : formatCny(cny)
 
   const baseUrl = `${window.location.origin}/v1`
   const loadFailed = Boolean(error) || defaultGroupModels.length === 0
+
+  // 客户端分页（数据量小，/api/pricing 一次返回全量）
+  const totalModels = visibleModels.length
+  const pageCount = getPageCount(totalModels, PAGE_SIZE)
+  const page = clampPage(pageState, pageCount)
+  const pagedModels = paginateItems(visibleModels, page, PAGE_SIZE)
 
   function renderTableBody() {
     if (isLoading) {
@@ -314,7 +365,7 @@ export function ModelMarket() {
     if (loadFailed) {
       return (
         <TableRow>
-          <TableCell colSpan={8}>
+          <TableCell colSpan={10}>
             <div className='text-muted-foreground space-y-1 py-4 text-center text-sm'>
               <p>{t('marketPage.loadFailed')}</p>
               <p className='text-muted-foreground/70 text-xs'>
@@ -335,7 +386,19 @@ export function ModelMarket() {
       )
     }
 
-    return visibleModels.map((model) => {
+    if (visibleModels.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={10}>
+            <div className='text-muted-foreground py-10 text-center text-sm'>
+              {t('marketPage.noResults')}
+            </div>
+          </TableCell>
+        </TableRow>
+      )
+    }
+
+    return pagedModels.map((model) => {
       const prices = computePrices(
         model,
         canonicalExchangeRate,
@@ -355,8 +418,11 @@ export function ModelMarket() {
       }
       // 本站缓存读价 = ratio × 2 × cache_ratio × 汇率（真实字段）
       const cacheReadCny =
-        !prices.perRequest && model.cache_ratio
-          ? (model.model_ratio || 0) * 2 * model.cache_ratio * (canonicalExchangeRate ?? 0)
+        !prices.perRequest && model.cache_ratio != null
+          ? (model.model_ratio || 0) *
+            2 *
+            model.cache_ratio *
+            (canonicalExchangeRate ?? 0)
           : null
       // 官网缓存命中价（official_pricing 快照真实字段）
       const officialEntry = officialPricing[model.model_name?.toLowerCase?.()]
@@ -364,272 +430,340 @@ export function ModelMarket() {
 
       return (
         <Fragment key={model.model_name}>
-        <TableRow
-          className='cursor-pointer'
-          onClick={() => setOpenModel(open ? null : model.model_name)}
-        >
-          {/* 渠道/模型：色块图标 + 名称链接 + 官方认证 */}
-          <TableCell>
-            <div className='flex items-center gap-2.5'>
-              <VendorIcon name={model.vendor_name} />
-              <div className='min-w-0'>
-                <div className='flex flex-wrap items-center gap-1.5'>
-                  <Link
-                    to='/pricing/$modelId'
-                    params={{ modelId: model.model_name }}
-                    onClick={(e) => e.stopPropagation()}
-                    className='text-primary font-semibold hover:underline'
-                  >
-                    {model.model_name}
-                  </Link>
-                  <span className='border-primary/25 bg-primary/10 text-primary inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold'>
-                    ✓ {t('marketPage.tag.official')}
-                  </span>
-                </div>
-                {model.vendor_name && (
-                  <div className='text-muted-foreground/70 text-xs'>
-                    {model.vendor_name}
-                  </div>
-                )}
-              </div>
-            </div>
-          </TableCell>
-          {/* 输入价格/缓存 */}
-          <TableCell className='tabular-nums'>
-            <div className='font-medium'>
-              {hasExchangeRate ? fmtPrice(prices.input) : t('marketPage.exchangeRateMissing')}
-              <span className='text-muted-foreground/60 ml-1 text-xs'>
-                / {prices.perRequest ? t('marketPage.unit.request') : t('marketPage.unit.tokens')}
-              </span>
-            </div>
-            <div className='text-muted-foreground/70 text-xs'>
-              {t('marketPage.table.cache')}{' '}
-              {cacheReadCny && hasExchangeRate ? fmtPrice(cacheReadCny) : '—'}
-            </div>
-          </TableCell>
-          {/* 输出价格 */}
-          <TableCell className='font-medium tabular-nums'>
-            {(() => {
-              if (prices.output == null) return '—'
-              if (!hasExchangeRate) return t('marketPage.exchangeRateMissing')
-              return fmtPrice(prices.output)
-            })()}
-          </TableCell>
-          {/* 倍率 */}
-          <TableCell>
-            {prices.perRequest ? (
-              <span className='text-muted-foreground text-xs'>—</span>
-            ) : (
-              <Badge
-                variant='secondary'
-                className={
-                  prices.effectiveOfficialMultiplier != null &&
-                  prices.effectiveOfficialMultiplier <= 1.2
-                    ? 'gap-1 bg-success/15 text-success'
-                    : 'gap-1'
-                }
-              >
-                {prices.effectiveOfficialMultiplier == null
-                  ? '—'
-                  : formatMultiplier(prices.effectiveOfficialMultiplier)}
-              </Badge>
-            )}
-          </TableCell>
-          {/* 成功率（真实 perf） */}
-          <TableCell>
-            {bars ? (
-              <SuccessBars
-                bars={bars}
-                percentage={`${(perf?.rate ?? 0).toFixed(1)}%`}
-              />
-            ) : (
-              <span className='text-muted-foreground text-xs'>—</span>
-            )}
-          </TableCell>
-          {/* 特性标签 */}
-          <TableCell>
-            <div className='flex flex-wrap gap-1'>
-              <Badge className='bg-primary/10 gap-1 text-[10.5px] text-primary'>
-                {t('marketPage.tag.official')}
-              </Badge>
-              {prices.perRequest && (
-                <Badge variant='secondary' className='gap-1 text-[10.5px]'>
-                  {t('marketPage.tag.request')}
-                </Badge>
-              )}
-              {!prices.perRequest && prices.input > 0 && prices.input < 1 && (
-                <Badge className='gap-1 bg-success/15 text-[10.5px] text-success'>
-                  {t('marketPage.tag.lowprice')}
-                </Badge>
-              )}
-            </div>
-          </TableCell>
-          {/* 缓存命中率（真实 perf 聚合） */}
-          <TableCell className='tabular-nums'>
-            {perf?.cacheHitRate != null && perf.cacheHitRate > 0
-              ? `${perf.cacheHitRate.toFixed(1)}%`
-              : '—'}
-          </TableCell>
-          {/* 延迟 */}
-          <TableCell className='tabular-nums'>
-            {perf ? `${(perf.latencyMs / 1000).toFixed(2)}s` : '—'}
-          </TableCell>
-          {/* 供货起（该模型最早启用渠道创建时间） */}
-          <TableCell className='text-muted-foreground tabular-nums text-xs'>
-            {model.first_available_at
-              ? new Date(model.first_available_at * 1000)
-                  .toLocaleDateString('zh-CN')
-              : '—'}
-          </TableCell>
-          {/* 操作 */}
-          <TableCell>
-            <Link to='/sign-in' onClick={(e) => e.stopPropagation()}>
-              <Button size='sm' className='h-9 rounded-full px-4 text-xs'>
-                {t('marketPage.createToken')}
-              </Button>
-            </Link>
-            <span className='text-muted-foreground ml-2 text-xs'>
-              {open ? '▲' : '▼'}
-            </span>
-          </TableCell>
-        </TableRow>
-        {/* 展开式三栏详情（严格对齐设计稿：价格对比 / 来源 / 路由指标） */}
-        {open && (
-          <TableRow>
-            <TableCell colSpan={10} className='bg-muted/20 p-4'>
-              <div className='grid gap-4 sm:grid-cols-3'>
-                <div>
-                  <div className='mb-2 flex items-center justify-between text-xs font-bold'>
-                    {t('marketPage.detail.priceCompare')}
-                    <span className='text-muted-foreground/60 font-normal'>
-                      {t('marketPage.unit.tokens')}
+          <TableRow
+            className='cursor-pointer'
+            onClick={() => setOpenModel(open ? null : model.model_name)}
+          >
+            {/* 渠道/模型：色块图标 + 名称链接 + 官方认证 */}
+            <TableCell>
+              <div className='flex items-center gap-2.5'>
+                <VendorIcon name={model.vendor_name} />
+                <div className='min-w-0'>
+                  <div className='flex flex-wrap items-center gap-1.5'>
+                    <Link
+                      to='/pricing/$modelId'
+                      params={{ modelId: model.model_name }}
+                      onClick={(e) => e.stopPropagation()}
+                      className='text-primary font-semibold hover:underline'
+                    >
+                      {model.model_name}
+                    </Link>
+                    <span className='border-primary/25 bg-primary/10 text-primary inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold'>
+                      ✓ {t('marketPage.tag.official')}
                     </span>
                   </div>
-                  {prices.official ? (
-                    <>
-                      <KVRow
-                        k={t('marketPage.detail.officialInput')}
-                        v={formatDisplayAmount(
-                          getOfficialPriceCny(
-                            {
-                              input: prices.official.inputUsdPerMillion,
-                              output: prices.official.outputUsdPerMillion,
-                              region: prices.official.domesticRegion ? 'domestic' : 'international',
-                            },
-                            displayExchangeRate
-                          ).input,
-                          currency,
-                          displayExchangeRate,
-                          2
-                        )}
-                      />
-                      <KVRow
-                        k={t('marketPage.detail.officialCache')}
-                        v={(() => {
-                          if (officialCache == null) return '—'
-                          const officialCny = prices.official.domesticRegion
-                            ? officialCache
-                            : officialCache * displayExchangeRate
-                          return formatDisplayAmount(
-                            officialCny,
-                            currency,
-                            displayExchangeRate,
-                            2
-                          )
-                        })()}
-                      />
-                      <KVRow
-                        k={t('marketPage.detail.officialOutput')}
-                        v={formatDisplayAmount(
-                          getOfficialPriceCny(
-                            {
-                              input: prices.official.inputUsdPerMillion,
-                              output: prices.official.outputUsdPerMillion,
-                              region: prices.official.domesticRegion ? 'domestic' : 'international',
-                            },
-                            displayExchangeRate
-                          ).output,
-                          currency,
-                          displayExchangeRate,
-                          2
-                        )}
-                      />
-                      <KVRow k={t('marketPage.detail.siteInput')} v={hasExchangeRate ? fmtPrice(prices.input) : '—'} highlight />
-                      <KVRow k={t('marketPage.detail.siteCache')} v={cacheReadCny && hasExchangeRate ? fmtPrice(cacheReadCny) : '—'} />
-                      <KVRow k={t('marketPage.detail.siteOutput')} v={prices.output != null && hasExchangeRate ? fmtPrice(prices.output) : '—'} highlight />
-                      <KVRow
-                        k={t('marketPage.effectiveOfficialMultiplier')}
-                        v={prices.effectiveOfficialMultiplier == null ? '—' : formatMultiplier(prices.effectiveOfficialMultiplier)}
-                        highlight
-                      />
-                    </>
-                  ) : (
-                    <div className='text-muted-foreground text-xs'>{t('marketPage.officialPriceNotConfigured')}</div>
+                  {model.vendor_name && (
+                    <div className='text-muted-foreground/70 text-xs'>
+                      {model.vendor_name}
+                    </div>
                   )}
-                </div>
-                <div>
-                  <div className='mb-2 text-xs font-bold'>{t('marketPage.detail.source')}</div>
-                  <KVRow k={t('marketPage.detail.channel')} v={model.vendor_name || '—'} />
-                  <KVRow
-                    k={t('marketPage.detail.certification')}
-                    v={
-                      <span className='inline-flex gap-1'>
-                        <span className='inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[10.5px] font-semibold text-purple-700 dark:bg-purple-500/15 dark:text-purple-300'>
-                          {t('marketPage.detail.direct')}
-                        </span>
-                        <span className='bg-success/10 text-success inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold'>
-                          ✓ {t('marketPage.tag.official')}
-                        </span>
-                      </span>
-                    }
-                  />
-                  <KVRow k={t('marketPage.detail.origin')} v={model.vendor_name || '—'} />
-                  <KVRow k={t('marketPage.detail.context')} v={formatContext(model.context_length)} />
-                  <KVRow k={t('marketPage.detail.verify')} v={t('marketPage.detail.noShare')} />
-                  {prices.official?.sourceUrl && (
-                    <KVRow
-                      k={t('marketPage.priceVerifiedOn')}
-                      v={
-                        <a href={prices.official.sourceUrl} target='_blank' rel='noreferrer' className='text-primary underline underline-offset-2'>
-                          {prices.official.verifiedOn}
-                        </a>
-                      }
-                    />
-                  )}
-                </div>
-                <div>
-                  <div className='mb-2 text-xs font-bold'>{t('marketPage.detail.routing')}</div>
-                  {bars ? (
-                    <>
-                      <MetricBar
-                        label={t('marketPage.detail.realtime')}
-                        bars={bars}
-                        value={`${(recent.at(-1) ?? perf?.rate ?? 0).toFixed(1)}%`}
-                      />
-                      <MetricBar
-                        label={t('marketPage.detail.h24')}
-                        bars={Array.from({ length: 12 }, () => (perf?.rate ?? 0) >= 90)}
-                        value={`${(perf?.rate ?? 0).toFixed(1)}%`}
-                      />
-                    </>
-                  ) : (
-                    <p className='text-muted-foreground text-xs'>—</p>
-                  )}
-                  <KVRow k={t('marketPage.table.latency')} v={perf ? `${(perf.latencyMs / 1000).toFixed(2)}s` : '—'} />
-                  <KVRow k={t('marketPage.detail.rateLimit')} v='—' />
                 </div>
               </div>
             </TableCell>
+            {/* 输入价格/缓存 */}
+            <TableCell className='tabular-nums'>
+              <div className='font-medium'>
+                {hasExchangeRate
+                  ? fmtPrice(prices.input)
+                  : t('marketPage.exchangeRateMissing')}
+                <span className='text-muted-foreground/60 ml-1 text-xs'>
+                  /{' '}
+                  {prices.perRequest
+                    ? t('marketPage.unit.request')
+                    : t('marketPage.unit.tokens')}
+                </span>
+              </div>
+              <div className='text-muted-foreground/70 text-xs'>
+                {t('marketPage.table.cache')}{' '}
+                {cacheReadCny != null && hasExchangeRate
+                  ? fmtPrice(cacheReadCny)
+                  : '—'}
+              </div>
+            </TableCell>
+            {/* 输出价格 */}
+            <TableCell className='font-medium tabular-nums'>
+              {(() => {
+                if (prices.output == null) return '—'
+                if (!hasExchangeRate) return t('marketPage.exchangeRateMissing')
+                return fmtPrice(prices.output)
+              })()}
+            </TableCell>
+            {/* 倍率 */}
+            <TableCell>
+              {prices.perRequest ? (
+                <span className='text-muted-foreground text-xs'>—</span>
+              ) : (
+                <Badge
+                  variant='secondary'
+                  className={
+                    prices.effectiveOfficialMultiplier != null &&
+                    prices.effectiveOfficialMultiplier <= 1.2
+                      ? 'bg-success/15 text-success gap-1'
+                      : 'gap-1'
+                  }
+                >
+                  {prices.effectiveOfficialMultiplier == null
+                    ? '—'
+                    : formatMultiplier(prices.effectiveOfficialMultiplier)}
+                </Badge>
+              )}
+            </TableCell>
+            {/* 成功率（真实 perf） */}
+            <TableCell>
+              {bars ? (
+                <SuccessBars
+                  bars={bars}
+                  percentage={`${(perf?.rate ?? 0).toFixed(1)}%`}
+                />
+              ) : (
+                <span className='text-muted-foreground text-xs'>—</span>
+              )}
+            </TableCell>
+            {/* 特性标签 */}
+            <TableCell>
+              <div className='flex flex-wrap gap-1'>
+                <Badge className='bg-primary/10 text-primary gap-1 text-[10.5px]'>
+                  {t('marketPage.tag.official')}
+                </Badge>
+                {prices.perRequest && (
+                  <Badge variant='secondary' className='gap-1 text-[10.5px]'>
+                    {t('marketPage.tag.request')}
+                  </Badge>
+                )}
+                {!prices.perRequest && prices.input > 0 && prices.input < 1 && (
+                  <Badge className='bg-success/15 text-success gap-1 text-[10.5px]'>
+                    {t('marketPage.tag.lowprice')}
+                  </Badge>
+                )}
+              </div>
+            </TableCell>
+            {/* 缓存命中率（真实 perf 聚合） */}
+            <TableCell className='tabular-nums'>
+              {perf?.cacheHitRate != null && perf.cacheHitRate > 0
+                ? `${perf.cacheHitRate.toFixed(1)}%`
+                : '—'}
+            </TableCell>
+            {/* 延迟 */}
+            <TableCell className='tabular-nums'>
+              {perf ? `${(perf.latencyMs / 1000).toFixed(2)}s` : '—'}
+            </TableCell>
+            {/* 供货起（该模型最早启用渠道创建时间，随浏览器语言本地化） */}
+            <TableCell className='text-muted-foreground text-xs tabular-nums'>
+              {model.first_available_at
+                ? new Date(model.first_available_at * 1000).toLocaleDateString()
+                : '—'}
+            </TableCell>
+            {/* 操作：登录用户直达令牌页，匿名先登录再回落到令牌页 */}
+            <TableCell>
+              <Link
+                to={isAuthenticated ? '/keys' : '/sign-in'}
+                search={isAuthenticated ? undefined : { redirect: '/keys' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button size='sm' className='h-9 rounded-full px-4 text-xs'>
+                  {t('marketPage.createToken')}
+                </Button>
+              </Link>
+              <span className='text-muted-foreground ml-2 text-xs'>
+                {open ? '▲' : '▼'}
+              </span>
+            </TableCell>
           </TableRow>
-        )}
+          {/* 展开式三栏详情（严格对齐设计稿：价格对比 / 来源 / 路由指标） */}
+          {open && (
+            <TableRow>
+              <TableCell colSpan={10} className='bg-muted/20 p-4'>
+                <div className='grid gap-4 sm:grid-cols-3'>
+                  <div>
+                    <div className='mb-2 flex items-center justify-between text-xs font-bold'>
+                      {t('marketPage.detail.priceCompare')}
+                      <span className='text-muted-foreground/60 font-normal'>
+                        {t('marketPage.unit.tokens')}
+                      </span>
+                    </div>
+                    {prices.official ? (
+                      <>
+                        <KVRow
+                          k={t('marketPage.detail.officialInput')}
+                          v={formatDisplayAmount(
+                            getOfficialPriceCny(
+                              {
+                                input: prices.official.inputUsdPerMillion,
+                                output: prices.official.outputUsdPerMillion,
+                                region: prices.official.domesticRegion
+                                  ? 'domestic'
+                                  : 'international',
+                              },
+                              displayExchangeRate
+                            ).input,
+                            currency,
+                            displayExchangeRate,
+                            2
+                          )}
+                        />
+                        <KVRow
+                          k={t('marketPage.detail.officialCache')}
+                          v={(() => {
+                            if (officialCache == null) return '—'
+                            const officialCny = prices.official.domesticRegion
+                              ? officialCache
+                              : officialCache * displayExchangeRate
+                            return formatDisplayAmount(
+                              officialCny,
+                              currency,
+                              displayExchangeRate,
+                              2
+                            )
+                          })()}
+                        />
+                        <KVRow
+                          k={t('marketPage.detail.officialOutput')}
+                          v={formatDisplayAmount(
+                            getOfficialPriceCny(
+                              {
+                                input: prices.official.inputUsdPerMillion,
+                                output: prices.official.outputUsdPerMillion,
+                                region: prices.official.domesticRegion
+                                  ? 'domestic'
+                                  : 'international',
+                              },
+                              displayExchangeRate
+                            ).output,
+                            currency,
+                            displayExchangeRate,
+                            2
+                          )}
+                        />
+                        <KVRow
+                          k={t('marketPage.detail.siteInput')}
+                          v={hasExchangeRate ? fmtPrice(prices.input) : '—'}
+                          highlight
+                        />
+                        <KVRow
+                          k={t('marketPage.detail.siteCache')}
+                          v={
+                            cacheReadCny != null && hasExchangeRate
+                              ? fmtPrice(cacheReadCny)
+                              : '—'
+                          }
+                        />
+                        <KVRow
+                          k={t('marketPage.detail.siteOutput')}
+                          v={
+                            prices.output != null && hasExchangeRate
+                              ? fmtPrice(prices.output)
+                              : '—'
+                          }
+                          highlight
+                        />
+                        <KVRow
+                          k={t('marketPage.effectiveOfficialMultiplier')}
+                          v={
+                            prices.effectiveOfficialMultiplier == null
+                              ? '—'
+                              : formatMultiplier(
+                                  prices.effectiveOfficialMultiplier
+                                )
+                          }
+                          highlight
+                        />
+                      </>
+                    ) : (
+                      <div className='text-muted-foreground text-xs'>
+                        {t('marketPage.officialPriceNotConfigured')}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className='mb-2 text-xs font-bold'>
+                      {t('marketPage.detail.source')}
+                    </div>
+                    <KVRow
+                      k={t('marketPage.detail.channel')}
+                      v={model.vendor_name || '—'}
+                    />
+                    <KVRow
+                      k={t('marketPage.detail.certification')}
+                      v={
+                        <span className='inline-flex gap-1'>
+                          <span className='inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[10.5px] font-semibold text-purple-700 dark:bg-purple-500/15 dark:text-purple-300'>
+                            {t('marketPage.detail.direct')}
+                          </span>
+                          <span className='bg-success/10 text-success inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold'>
+                            ✓ {t('marketPage.tag.official')}
+                          </span>
+                        </span>
+                      }
+                    />
+                    <KVRow
+                      k={t('marketPage.detail.origin')}
+                      v={model.vendor_name || '—'}
+                    />
+                    <KVRow
+                      k={t('marketPage.detail.context')}
+                      v={formatContext(model.context_length)}
+                    />
+                    <KVRow
+                      k={t('marketPage.detail.verify')}
+                      v={t('marketPage.detail.noShare')}
+                    />
+                    {prices.official?.sourceUrl && (
+                      <KVRow
+                        k={t('marketPage.priceVerifiedOn')}
+                        v={
+                          <a
+                            href={prices.official.sourceUrl}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='text-primary underline underline-offset-2'
+                          >
+                            {prices.official.verifiedOn}
+                          </a>
+                        }
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <div className='mb-2 text-xs font-bold'>
+                      {t('marketPage.detail.routing')}
+                    </div>
+                    {bars ? (
+                      <>
+                        <MetricBar
+                          label={t('marketPage.detail.realtime')}
+                          bars={bars}
+                          value={`${(recent.at(-1) ?? perf?.rate ?? 0).toFixed(1)}%`}
+                        />
+                        <MetricBar
+                          label={t('marketPage.detail.h24')}
+                          bars={Array.from(
+                            { length: 12 },
+                            () => (perf?.rate ?? 0) >= 90
+                          )}
+                          value={`${(perf?.rate ?? 0).toFixed(1)}%`}
+                        />
+                      </>
+                    ) : (
+                      <p className='text-muted-foreground text-xs'>—</p>
+                    )}
+                    <KVRow
+                      k={t('marketPage.table.latency')}
+                      v={perf ? `${(perf.latencyMs / 1000).toFixed(2)}s` : '—'}
+                    />
+                    <KVRow k={t('marketPage.detail.rateLimit')} v='—' />
+                  </div>
+                </div>
+              </TableCell>
+            </TableRow>
+          )}
         </Fragment>
       )
     })
   }
 
   return (
-    <PublicLayout>
-      <div className='mx-auto max-w-5xl space-y-10 py-8'>
+    <PublicLayout contentWidth='wide'>
+      <div className='mx-auto w-full space-y-10 py-2'>
         {/* v2: 页头（标题左 + ¥/$ 切换右） */}
         <div className='flex items-start justify-between gap-4'>
           <div>
@@ -655,7 +789,7 @@ export function ModelMarket() {
               <div className='mb-2 text-sm font-bold'>
                 {t('marketPage.quickBrands')}
               </div>
-              <div className='flex flex-wrap gap-2'>
+              <div className='flex gap-2 overflow-x-auto pb-1'>
                 {brandChips.map(([name, count]) => (
                   <FilterChip
                     key={name}
@@ -664,7 +798,7 @@ export function ModelMarket() {
                     subtitle={t('marketPage.modelsCount', { count })}
                     active={brandFilter === name}
                     onClick={() =>
-                      setBrandFilter(brandFilter === name ? null : name)
+                      applyBrandFilter(brandFilter === name ? null : name)
                     }
                   />
                 ))}
@@ -674,7 +808,7 @@ export function ModelMarket() {
               <div className='mb-2 text-sm font-bold'>
                 {t('marketPage.quickModels')}
               </div>
-              <div className='flex flex-wrap gap-2'>
+              <div className='flex gap-2 overflow-x-auto pb-1'>
                 {(brandFilter
                   ? defaultGroupModels.filter(
                       (m) => m.vendor_name === brandFilter
@@ -693,7 +827,7 @@ export function ModelMarket() {
                       }
                       active={search === m.model_name}
                       onClick={() =>
-                        setSearch(search === m.model_name ? '' : m.model_name)
+                        applySearch(search === m.model_name ? '' : m.model_name)
                       }
                     />
                   ))}
@@ -703,8 +837,8 @@ export function ModelMarket() {
             <div className='flex flex-wrap items-center gap-2'>
               <select
                 value={brandFilter ?? ''}
-                onChange={(e) => setBrandFilter(e.target.value || null)}
-                className='border-border bg-card/80 rounded-xl border px-3 py-2 text-sm outline-none focus:border-primary'
+                onChange={(e) => applyBrandFilter(e.target.value || null)}
+                className='border-border bg-card/80 focus:border-primary rounded-xl border px-3 py-2 text-sm outline-none'
               >
                 <option value=''>{t('marketPage.brand.all')}</option>
                 {brandChips.map(([name]) => (
@@ -715,17 +849,19 @@ export function ModelMarket() {
               </select>
               <select
                 value={billingFilter}
-                onChange={(e) => setBillingFilter(e.target.value)}
-                className='border-border bg-card/80 rounded-xl border px-3 py-2 text-sm outline-none focus:border-primary'
+                onChange={(e) => applyBillingFilter(e.target.value)}
+                className='border-border bg-card/80 focus:border-primary rounded-xl border px-3 py-2 text-sm outline-none'
               >
                 <option value=''>{t('marketPage.billing.all')}</option>
                 <option value='token'>{t('marketPage.billing.token')}</option>
-                <option value='request'>{t('marketPage.billing.request')}</option>
+                <option value='request'>
+                  {t('marketPage.billing.request')}
+                </option>
               </select>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className='border-border bg-card/80 rounded-xl border px-3 py-2 text-sm outline-none focus:border-primary'
+                onChange={(e) => applySortBy(e.target.value)}
+                className='border-border bg-card/80 focus:border-primary rounded-xl border px-3 py-2 text-sm outline-none'
               >
                 <option value=''>{t('marketPage.sort.default')}</option>
                 <option value='ratio'>{t('marketPage.sort.ratio')}</option>
@@ -734,9 +870,9 @@ export function ModelMarket() {
               </select>
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => applySearch(e.target.value)}
                 placeholder={t('marketPage.searchPlaceholder')}
-                className='border-border bg-card/80 min-w-52 flex-1 rounded-xl border px-3 py-2 text-sm outline-none focus:border-primary'
+                className='border-border bg-card/80 focus:border-primary min-w-52 flex-1 rounded-xl border px-3 py-2 text-sm outline-none'
               />
               <Button
                 variant='outline'
@@ -749,16 +885,7 @@ export function ModelMarket() {
                 <RefreshCw className='size-4' />
                 {t('marketPage.refresh')}
               </Button>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => {
-                  setSearch('')
-                  setBrandFilter(null)
-                  setBillingFilter('')
-                  setSortBy('')
-                }}
-              >
+              <Button variant='outline' size='sm' onClick={resetAllFilters}>
                 {t('marketPage.resetFilters')}
               </Button>
             </div>
@@ -775,29 +902,59 @@ export function ModelMarket() {
               {t('marketPage.dataSource')}
             </span>
           </div>
-          <GlassSurface variant='shell' className='p-0 overflow-hidden'>
+          <GlassSurface variant='shell' className='overflow-hidden p-0'>
             <Card className='border-0 shadow-none ring-0'>
-            <CardContent className='px-0'>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('marketPage.table.model')}</TableHead>
-                    <TableHead>{t('marketPage.table.inputCache')}</TableHead>
-                    <TableHead>{t('marketPage.table.output')}</TableHead>
-                    <TableHead>{t('marketPage.table.ratio')}</TableHead>
-                    <TableHead>{t('marketPage.table.success')}</TableHead>
-                    <TableHead>{t('marketPage.table.tags')}</TableHead>
-                    <TableHead>{t('marketPage.table.cacheHit')}</TableHead>
-                    <TableHead>{t('marketPage.table.latency')}</TableHead>
-                    <TableHead>{t('marketPage.table.since')}</TableHead>
-                    <TableHead>{t('marketPage.table.action')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>{renderTableBody()}</TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+              <CardContent className='px-0'>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('marketPage.table.model')}</TableHead>
+                      <TableHead>{t('marketPage.table.inputCache')}</TableHead>
+                      <TableHead>{t('marketPage.table.output')}</TableHead>
+                      <TableHead>{t('marketPage.table.ratio')}</TableHead>
+                      <TableHead>{t('marketPage.table.success')}</TableHead>
+                      <TableHead>{t('marketPage.table.tags')}</TableHead>
+                      <TableHead>{t('marketPage.table.cacheHit')}</TableHead>
+                      <TableHead>{t('marketPage.table.latency')}</TableHead>
+                      <TableHead>{t('marketPage.table.since')}</TableHead>
+                      <TableHead>{t('marketPage.table.action')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>{renderTableBody()}</TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </GlassSurface>
+          {/* 分页：共 X 条 · 第 X/Y 页 + 上一页/下一页 */}
+          {!isLoading && !loadFailed && totalModels > 0 && (
+            <div className='flex flex-wrap items-center justify-between gap-3'>
+              <span className='text-muted-foreground text-xs'>
+                {t('marketPage.pagination.summary', {
+                  total: totalModels,
+                  page,
+                  pages: pageCount,
+                })}
+              </span>
+              <div className='flex items-center gap-2'>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  disabled={page <= 1}
+                  onClick={() => setPageState(page - 1)}
+                >
+                  {t('marketPage.pagination.prev')}
+                </Button>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  disabled={page >= pageCount}
+                  onClick={() => setPageState(page + 1)}
+                >
+                  {t('marketPage.pagination.next')}
+                </Button>
+              </div>
+            </div>
+          )}
           <p className='text-muted-foreground text-sm leading-relaxed'>
             {t('marketPage.failover.note')}
           </p>
@@ -813,7 +970,7 @@ export function ModelMarket() {
           </h2>
           <div className='grid gap-4 md:grid-cols-3'>
             <Link to='/register' className='block h-full'>
-              <Card className='h-full transition-colors hover:border-primary/40'>
+              <Card className='hover:border-primary/40 h-full transition-colors'>
                 <CardHeader>
                   <div className='flex items-center justify-between'>
                     <div className='bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg'>
@@ -830,7 +987,7 @@ export function ModelMarket() {
               </Card>
             </Link>
             <Link to='/keys' className='block h-full'>
-              <Card className='h-full transition-colors hover:border-primary/40'>
+              <Card className='hover:border-primary/40 h-full transition-colors'>
                 <CardHeader>
                   <div className='flex items-center justify-between'>
                     <div className='bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg'>
@@ -885,7 +1042,11 @@ export function ModelMarket() {
                   {t('marketPage.health.desc')}
                 </CardDescription>
               </div>
-              <Button variant='outline' size='sm' render={<Link to='/health' />}>
+              <Button
+                variant='outline'
+                size='sm'
+                render={<Link to='/health' />}
+              >
                 {t('marketPage.health.link')}
               </Button>
             </CardContent>

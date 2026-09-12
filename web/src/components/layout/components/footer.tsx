@@ -20,9 +20,12 @@ import { Link } from '@tanstack/react-router'
 import { Fragment, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { BrandMark } from '@/components/layout/components/brand-mark'
+import { PageContainer } from '@/components/layout/components/page-container'
 import { useIsAdmin } from '@/hooks/use-admin'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { DEFAULT_LOGO, DEFAULT_SYSTEM_NAME } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 interface FooterLink {
@@ -52,10 +55,11 @@ const NEW_API_FOOTER_ATTRIBUTION_KEY = [
 // C2C platform pages. They used to be static files (/contributor.html,
 // /market.html, /health.json) served by the web server outside the SPA; they
 // are now first-class SPA routes, so render them as router <Link>s.
+// 临时下线（2026-09-12）：三页整改中，页脚入口一并隐藏；重新上线时恢复以下条目。
 const PLATFORM_LINKS: FooterLink[] = [
-  { text: 'footer.platformLinks.contributor', href: '/contributor' },
-  { text: 'footer.platformLinks.market', href: '/market' },
-  { text: 'footer.platformLinks.health', href: '/health' },
+  // { text: 'footer.platformLinks.contributor', href: '/contributor' },
+  // { text: 'footer.platformLinks.market', href: '/market' },
+  // { text: 'footer.platformLinks.health', href: '/health' },
 ]
 
 function FooterLinkItem(props: { link: FooterLink }) {
@@ -166,10 +170,12 @@ export function Footer(props: FooterProps) {
     logo: systemLogo,
     footerHtml,
     demoSiteEnabled,
+    loading,
+    logoLoaded,
   } = useSystemConfig()
 
-  const displayLogo = systemLogo || props.logo || '/logo.png'
-  const displayName = systemName || props.name || 'New API'
+  const displayLogo = systemLogo || props.logo || DEFAULT_LOGO
+  const displayName = systemName || props.name || DEFAULT_SYSTEM_NAME
   const isDemoSiteMode = Boolean(demoSiteEnabled)
   const currentYear = new Date().getFullYear()
   // C2C platform links (contributor / market / health) are admin-only.
@@ -242,7 +248,7 @@ export function Footer(props: FooterProps) {
           props.className
         )}
       >
-        <div className='mx-auto w-full max-w-6xl px-6 py-5'>
+        <PageContainer className='py-5'>
           <div className='bg-muted/20 border-border/50 flex flex-col items-center justify-between gap-4 rounded-2xl border px-4 py-4 backdrop-blur-sm sm:flex-row sm:px-5'>
             <div
               className='custom-footer text-muted-foreground min-w-0 text-center text-sm sm:text-left'
@@ -253,7 +259,7 @@ export function Footer(props: FooterProps) {
               <ProjectAttribution currentYear={currentYear} inline />
             </div>
           </div>
-        </div>
+        </PageContainer>
       </footer>
     )
   }
@@ -262,15 +268,18 @@ export function Footer(props: FooterProps) {
     <footer
       className={cn('border-border/40 relative z-10 border-t', props.className)}
     >
-      <div className='mx-auto max-w-6xl px-6 py-12 md:py-16'>
+      <PageContainer className='py-12 md:py-16'>
         <div className='flex flex-col justify-between gap-10 md:flex-row md:gap-16'>
           {/* Brand column */}
           <div className='shrink-0'>
             <Link to='/' className='group flex items-center gap-2.5'>
-              <img
+              <BrandMark
                 src={displayLogo}
+                name={displayName}
                 alt={displayName}
-                className='size-7 rounded-lg object-contain'
+                loading={!props.logo && loading}
+                logoLoaded={Boolean(props.logo) || logoLoaded}
+                variant='footer'
               />
               <span className='text-sm font-semibold tracking-tight'>
                 {displayName}
@@ -297,14 +306,14 @@ export function Footer(props: FooterProps) {
           {/* Links columns */}
           {isDemoSiteMode && (
             <div className='grid grid-cols-3 gap-8 md:gap-16'>
-              {displayColumns.map((column, index) => (
-                <div key={index}>
+              {displayColumns.map((column) => (
+                <div key={column.title}>
                   <p className='text-muted-foreground/50 mb-3 text-xs font-medium tracking-wider uppercase'>
                     {t(column.title)}
                   </p>
                   <ul className='space-y-2.5'>
-                    {column.links.map((link, linkIndex) => (
-                      <li key={linkIndex}>
+                    {column.links.map((link) => (
+                      <li key={`${link.href}:${link.text}`}>
                         <FooterLinkItem link={link} />
                       </li>
                     ))}
@@ -327,7 +336,7 @@ export function Footer(props: FooterProps) {
           </div>
           <ProjectAttribution currentYear={currentYear} />
         </div>
-      </div>
+      </PageContainer>
     </footer>
   )
 }

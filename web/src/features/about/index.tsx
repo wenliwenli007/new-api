@@ -33,24 +33,26 @@ function EmptyAboutState() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <PublicLayout showMainContainer={false}>
+    <>
       <PastelBackdrop />
-      <div className='mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-12 sm:px-8 sm:py-16'>
+      <div className='mx-auto flex w-full max-w-4xl flex-col gap-6 py-6 sm:py-8'>
         <GlassSurface variant='shell' className='space-y-3 text-center'>
-          <h1 className='text-balance text-3xl font-bold tracking-tight sm:text-4xl'>
+          <h1 className='text-3xl font-bold tracking-tight text-balance sm:text-4xl'>
             {t('aboutPage.hero.title')}
           </h1>
-          <p className='text-pretty mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg'>
+          <p className='text-muted-foreground mx-auto max-w-2xl text-base text-pretty sm:text-lg'>
             {t('aboutPage.hero.subtitle')}
           </p>
         </GlassSurface>
 
         <GlassSurface variant='card' className='space-y-3'>
-          <div className='flex items-center gap-2 text-primary'>
+          <div className='text-primary flex items-center gap-2'>
             <ShieldCheck className='size-5' />
-            <h2 className='text-lg font-semibold'>{t('aboutPage.diff.title')}</h2>
+            <h2 className='text-lg font-semibold'>
+              {t('aboutPage.diff.title')}
+            </h2>
           </div>
-          <ol className='text-sm leading-relaxed text-muted-foreground space-y-2'>
+          <ol className='text-muted-foreground space-y-2 text-sm leading-relaxed'>
             {[1, 2, 3, 4].map((i) => (
               <li key={i} className='flex gap-2'>
                 <span className='text-primary font-bold'>{i}.</span>
@@ -61,11 +63,13 @@ function EmptyAboutState() {
         </GlassSurface>
 
         <GlassSurface variant='card' className='space-y-3'>
-          <div className='flex items-center gap-2 text-primary'>
+          <div className='text-primary flex items-center gap-2'>
             <Sparkles className='size-5' />
-            <h2 className='text-lg font-semibold'>{t('aboutPage.terms.title')}</h2>
+            <h2 className='text-lg font-semibold'>
+              {t('aboutPage.terms.title')}
+            </h2>
           </div>
-          <ul className='text-sm leading-relaxed text-muted-foreground space-y-2'>
+          <ul className='text-muted-foreground space-y-2 text-sm leading-relaxed'>
             {[1, 2, 3, 4].map((i) => (
               <li key={i} className='flex gap-2'>
                 <span className='text-primary'>•</span>
@@ -76,11 +80,13 @@ function EmptyAboutState() {
         </GlassSurface>
 
         <GlassSurface variant='card' className='space-y-2'>
-          <div className='flex items-center gap-2 text-primary'>
+          <div className='text-primary flex items-center gap-2'>
             <Mail className='size-5' />
-            <h2 className='text-lg font-semibold'>{t('aboutPage.contact.title')}</h2>
+            <h2 className='text-lg font-semibold'>
+              {t('aboutPage.contact.title')}
+            </h2>
           </div>
-          <p className='text-sm leading-relaxed text-muted-foreground'>
+          <p className='text-muted-foreground text-sm leading-relaxed'>
             {t('aboutPage.contact.lead')}{' '}
             <a
               href='mailto:support@llmcommons.com'
@@ -89,20 +95,26 @@ function EmptyAboutState() {
               support@llmcommons.com
             </a>
           </p>
-          <p className='text-sm text-muted-foreground'>
+          <p className='text-muted-foreground text-sm'>
             {t('aboutPage.contact.status')}{' '}
-            <a href='/status' className='text-primary font-medium hover:underline'>
+            <a
+              href='/status'
+              className='text-primary font-medium hover:underline'
+            >
               /status
             </a>
             {' · '}
             {t('aboutPage.contact.pricing')}{' '}
-            <a href='/pricing' className='text-primary font-medium hover:underline'>
+            <a
+              href='/pricing'
+              className='text-primary font-medium hover:underline'
+            >
               /pricing
             </a>
           </p>
         </GlassSurface>
 
-        <p className='text-center text-xs text-muted-foreground'>
+        <p className='text-muted-foreground text-center text-xs'>
           <a
             href='https://github.com/QuantumNous/new-api'
             target='_blank'
@@ -138,8 +150,7 @@ function EmptyAboutState() {
           >
             {t('JustSong')}
           </a>
-          .{' '}
-          {t('This project must be used in compliance with the')}{' '}
+          . {t('This project must be used in compliance with the')}{' '}
           <a
             href='https://github.com/QuantumNous/new-api/blob/main/LICENSE'
             target='_blank'
@@ -151,7 +162,7 @@ function EmptyAboutState() {
           .
         </p>
       </div>
-    </PublicLayout>
+    </>
   )
 }
 
@@ -193,7 +204,7 @@ export function About() {
       <PublicLayout showMainContainer={false}>
         <iframe
           src={rawContent}
-          className='h-[calc(100vh-3.5rem)] w-full border-0'
+          className='h-[calc(100svh-5rem)] w-full border-0'
           title={t('About')}
           sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts'
         />
@@ -216,7 +227,7 @@ export function About() {
 
   return (
     <PublicLayout>
-      <div className='mx-auto max-w-6xl px-4 py-8'>
+      <div className='py-2'>
         <RichContent
           mode='markdown'
           content={rawContent}

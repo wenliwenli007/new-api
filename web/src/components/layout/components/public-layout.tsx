@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { PastelBackdrop } from '@/components/ui/v2-surfaces'
 
 import type { TopNavLink } from '../types'
+import { PageShell, type PageContainerWidth } from './page-container'
 import { PublicHeader, type PublicHeaderProps } from './public-header'
 
 type PublicLayoutProps = {
@@ -32,6 +33,7 @@ type PublicLayoutProps = {
   showNotifications?: boolean
   logo?: React.ReactNode
   siteName?: string
+  contentWidth?: PageContainerWidth
 }
 
 export function PublicLayout(props: PublicLayoutProps) {
@@ -52,13 +54,13 @@ export function PublicLayout(props: PublicLayoutProps) {
         {...props.headerProps}
       />
 
-      {props.showMainContainer !== false ? (
-        <main className='container px-4 py-6 pt-20 md:px-4'>
-          {props.children}
-        </main>
-      ) : (
-        props.children
-      )}
+      <PageShell
+        contained={props.showMainContainer !== false}
+        width={props.contentWidth}
+        className={props.showMainContainer === false ? 'pb-0' : undefined}
+      >
+        {props.children}
+      </PageShell>
     </div>
   )
 }

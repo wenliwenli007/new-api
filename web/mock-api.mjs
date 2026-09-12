@@ -215,11 +215,11 @@ const server = http.createServer((req, res) => {
   // seed models as the market mock (features/sharellm/mock/market.ts) so the
   // prototype shows data on /pricing without the admin-gated /market.
   if (req.method === 'GET' && url === '/api/pricing') {
-    const pricingModel = (id, model_name, vendor_name, model_ratio, completion_ratio) => ({
+    const pricingModel = (id, vendorId, model_name, vendor_name, model_ratio, completion_ratio) => ({
       id,
       model_name,
       vendor_name,
-      vendor_id: id,
+      vendor_id: vendorId,
       quota_type: 0,
       model_ratio,
       completion_ratio,
@@ -233,18 +233,18 @@ const server = http.createServer((req, res) => {
       success: true,
       message: '',
       data: [
-        pricingModel(1, 'deepseek-v4-flash', 'DeepSeek', 0.31, 1),
-        pricingModel(2, 'deepseek-v4-pro', 'DeepSeek', 0.92, 3),
-        pricingModel(3, 'glm-5.2', 'Zhipu', 0.3, 3.33),
-        pricingModel(4, 'gpt-5.6-luna', 'OpenAI', 0.07, 6),
-        pricingModel(5, 'gpt-5.6-sol', 'OpenAI', 0.165, 6.06),
-        pricingModel(6, 'grok-4.5', 'xAI', 0.004, 0.3),
+        pricingModel(1, 1, 'deepseek-v4-flash', 'DeepSeek', 0.31, 1),
+        pricingModel(2, 1, 'deepseek-v4-pro', 'DeepSeek', 0.92, 3),
+        pricingModel(3, 3, 'glm-5.2', 'Zhipu', 0.3, 3.33),
+        pricingModel(4, 4, 'gpt-5.6-luna', 'OpenAI', 0.07, 6),
+        pricingModel(5, 4, 'gpt-5.6-sol', 'OpenAI', 0.165, 6.06),
+        pricingModel(6, 6, 'grok-4.5', 'xAI', 0.004, 0.3),
       ],
       vendors: [
-        { id: 1, vendor_name: 'DeepSeek', description: '' },
-        { id: 3, vendor_name: 'Zhipu', description: '' },
-        { id: 4, vendor_name: 'OpenAI', description: '' },
-        { id: 6, vendor_name: 'xAI', description: '' },
+        { id: 1, name: 'DeepSeek', description: '' },
+        { id: 3, name: 'Zhipu', description: '' },
+        { id: 4, name: 'OpenAI', description: '' },
+        { id: 6, name: 'xAI', description: '' },
       ],
       group_ratio: { default: 1 },
       usable_group: { default: { desc: '默认分组', ratio: 1 } },
@@ -272,7 +272,8 @@ const server = http.createServer((req, res) => {
     })
     return send(res, 200, { success: true, message: '', data: items })
   }
-  // Performance health panel: PerfModelSummary[] (avg_latency_ms in ms, success_rate 0-1).
+  // Performance health panel: PerfModelSummary[] (avg_latency_ms in ms, success_rate 0-100
+  // — production scale, see pkg/perf_metrics/metrics.go; do not use 0-1).
   if (req.method === 'GET' && url === '/api/perf-metrics/summary') {
     return send(res, 200, {
       success: true,
@@ -282,26 +283,57 @@ const server = http.createServer((req, res) => {
           {
             model_name: 'deepseek-v4-flash',
             avg_latency_ms: 1920,
-            success_rate: 1,
+            success_rate: 100,
             avg_tps: 35.9,
             request_count: 128,
           },
           {
             model_name: 'glm-5.2',
             avg_latency_ms: 3520,
-            success_rate: 0.998,
+            success_rate: 99.8,
             avg_tps: 28.2,
             request_count: 96,
           },
           {
             model_name: 'gpt-5.6-luna',
             avg_latency_ms: 8000,
-            success_rate: 1,
+            success_rate: 100,
             avg_tps: 19.5,
             request_count: 42,
           },
         ],
       },
+    })
+  }
+  // Dashboard recent calls: paginated consume logs (UsageLog shape).
+  if (req.method === 'GET' && url === '/api/log/self') {
+    const items = [2, 5, 8, 20, 36].map((hoursAgo, i) => ({
+      id: i + 1,
+      user_id: 1,
+      created_at: now() - hoursAgo * 3600,
+      type: 2,
+      content: '',
+      username: 'founder',
+      token_name: 'mock-key-1',
+      model_name: ['deepseek-v4-flash', 'glm-5.2', 'gpt-5.6-luna', 'deepseek-v4-pro', 'grok-4.5'][i],
+      quota: [3000, 5400, 1200, 9600, 150][i],
+      prompt_tokens: [800, 1600, 420, 3200, 60][i],
+      completion_tokens: [300, 900, 180, 1400, 25][i],
+      use_time: [1200, 3400, 900, 2600, 400][i],
+      is_stream: true,
+      channel: 1,
+      channel_name: '',
+      token_id: 1,
+      group: 'default',
+      ip: '',
+      other: '{}',
+      request_id: `mock-req-${i + 1}`,
+      upstream_request_id: '',
+    }))
+    return send(res, 200, {
+      success: true,
+      message: '',
+      data: { items, total: items.length, page: 1, page_size: 5 },
     })
   }
   // Uptime panel: UptimeGroupResult[] (uptime 0-1, status 0=down 1=up).
@@ -331,9 +363,43 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && url === '/api/user/2fa/status') {
     return send(res, 200, { success: true, data: { enabled: false } })
   }
+  // Public home page CMS content: empty string renders the default v2 home.
+  if (req.method === 'GET' && url === '/api/home_page_content') {
+    return send(res, 200, { success: true, message: '', data: '' })
+  }
+  // Home pulse strip (features/home/components/sections/pulse.tsx getTodayStats).
+  if (req.method === 'GET' && url === '/api/stats/today') {
+    return send(res, 200, {
+      success: true,
+      message: '',
+      data: { today_calls: 128, today_tokens: 153600, official_channels: 2 },
+    })
+  }
+  // About page: empty content renders the built-in EmptyAboutState cards.
+  if (req.method === 'GET' && url === '/api/about') {
+    return send(res, 200, { success: true, message: '', data: '' })
+  }
+  // Rankings page (features/rankings/api.ts getRankings → RankingsSnapshot).
+  if (req.method === 'GET' && url === '/api/rankings') {
+    return send(res, 200, {
+      success: true,
+      message: '',
+      data: {
+        models: [],
+        vendors: [],
+        models_history: [],
+        vendor_share_history: [],
+        top_movers: [],
+        top_droppers: [],
+      },
+    })
+  }
   if (url.startsWith('/api/')) {
-    // Generic mock: pages relying on sharellmApi use USE_MOCK client-side and
-    // never reach here; this catch-all keeps stray admin calls non-fatal.
+    // Read-only calls the mock does not model stay non-fatal (no error toast
+    // from the response interceptor); mutations still fail loudly.
+    if (req.method === 'GET') {
+      return send(res, 200, { success: true, message: '', data: null })
+    }
     return send(res, 200, { success: false, message: 'mock-api: not implemented' })
   }
   return send(res, 404, { success: false, message: 'not found' })

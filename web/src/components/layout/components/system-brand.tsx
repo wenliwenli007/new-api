@@ -26,7 +26,10 @@ import {
 } from '@/components/ui/sidebar'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { DEFAULT_SYSTEM_NAME } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+
+import { BrandMark } from './brand-mark'
 
 type SystemBrandProps = {
   defaultName?: string
@@ -48,10 +51,10 @@ type SystemBrandProps = {
 export function SystemBrand(props: SystemBrandProps) {
   const { t } = useTranslation()
   const { status } = useStatus()
-  const { logo } = useSystemConfig()
+  const { systemName, logo, loading, logoLoaded } = useSystemConfig()
 
   const variant = props.variant ?? 'sidebar'
-  const name = status?.system_name || props.defaultName || 'New API'
+  const name = systemName || props.defaultName || DEFAULT_SYSTEM_NAME
   const version =
     status?.version || props.defaultVersion || t('Unknown version')
 
@@ -65,13 +68,14 @@ export function SystemBrand(props: SystemBrandProps) {
           'hover:bg-accent focus-visible:ring-ring/40 focus-visible:ring-2'
         )}
       >
-        <div className='flex size-5 items-center justify-center overflow-hidden rounded-md'>
-          <img
-            src={logo}
-            alt={t('Logo')}
-            className='size-full rounded-md object-cover'
-          />
-        </div>
+        <BrandMark
+          src={logo}
+          name={name}
+          alt={t('Logo')}
+          loading={loading}
+          logoLoaded={logoLoaded}
+          variant='compact'
+        />
         <span className='max-w-[12rem] truncate'>{name}</span>
       </Link>
     )
@@ -85,13 +89,14 @@ export function SystemBrand(props: SystemBrandProps) {
           className='hover:text-sidebar-foreground active:text-sidebar-foreground cursor-default hover:bg-transparent active:bg-transparent'
           render={<div />}
         >
-          <div className='flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg'>
-            <img
-              src={logo}
-              alt={t('Logo')}
-              className='size-full rounded-lg object-cover'
-            />
-          </div>
+          <BrandMark
+            src={logo}
+            name={name}
+            alt={t('Logo')}
+            loading={loading}
+            logoLoaded={logoLoaded}
+            variant='sidebar'
+          />
           <div className='grid flex-1 text-start text-sm leading-tight group-data-[collapsible=icon]:hidden'>
             <span className='truncate font-semibold'>{name}</span>
             <span className='truncate text-xs'>{version}</span>

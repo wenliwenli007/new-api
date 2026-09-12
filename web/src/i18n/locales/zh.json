@@ -3002,10 +3002,12 @@
     "充值 / 兑换码": "充值 / 兑换码",
     "本月消费": "本月消费",
     "本月调用统计": "本月调用统计",
+    "本月调用次数": "本月调用次数",
     "可用令牌": "可用令牌",
     "管理令牌": "管理令牌",
     "最近调用": "最近调用",
     "最近 7 天的真实调用聚合数据": "最近 7 天的真实调用聚合数据",
+    "最近 7 天的真实调用数据": "最近 7 天的真实调用数据",
     "查看全部日志": "查看全部日志",
     "时间": "时间",
     "模型": "模型",
@@ -5850,6 +5852,10 @@
     "marketPage.searchPlaceholder": "搜索模型…",
     "marketPage.resetFilters": "重置筛选",
     "marketPage.detail.origin": "货源",
+    "marketPage.noResults": "没有匹配的模型，试试调整筛选条件",
+    "marketPage.pagination.summary": "共 {{total}} 条 · 第 {{page}}/{{pages}} 页",
+    "marketPage.pagination.prev": "上一页",
+    "marketPage.pagination.next": "下一页",
     "home": {
       "dev": {
         "title": "给开发者",

@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
-import { Button } from '@/components/ui/button'
 import { VendorIcon } from '@/components/ui/vendor-icon'
 import { usePricingData } from '@/features/pricing/hooks'
 import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
@@ -62,6 +61,7 @@ export function HotModels() {
             {t('home.hot.subtitle')}
           </p>
         </div>
+        {/* 临时下线（2026-09-12）：模型市场页整改中，「浏览更多」入口暂隐；重新上线时恢复。
         <Button
           variant='outline'
           size='sm'
@@ -70,6 +70,7 @@ export function HotModels() {
         >
           {t('home.hot.browse')}
         </Button>
+        */}
       </div>
       <div className='mt-4 flex gap-2.5 overflow-x-auto pb-1'>
         {hot.map((model) => {

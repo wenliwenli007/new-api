@@ -16,11 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
-import { Button } from '@/components/ui/button'
 import { getUptimeStatus } from '@/features/dashboard/api'
 import { api } from '@/lib/api'
 import { usePricingData } from '@/features/pricing/hooks'
@@ -111,6 +109,7 @@ export function Pulse() {
             {t('home.pulse.subtitle')}
           </p>
         </div>
+        {/* 临时下线（2026-09-12）：服务状态页整改中，「查看状态」入口暂隐；重新上线时恢复。
         <Button
           variant='outline'
           size='sm'
@@ -119,6 +118,7 @@ export function Pulse() {
         >
           {t('home.pulse.viewStatus')}
         </Button>
+        */}
       </div>
       <div className='mt-5 flex flex-wrap justify-center gap-9 pb-1'>
         {statsList.map(([key, value]) => (

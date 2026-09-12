@@ -19,20 +19,15 @@ For commercial licensing, please contact support@quantumnous.com.
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 import { ContributorProgram } from '@/features/contributor'
-import { ROLE } from '@/lib/roles'
-import { useAuthStore } from '@/stores/auth-store'
 
 export const Route = createFileRoute('/contributor/')({
-  // 管理员专属：贡献者计划未达发布标准，暂对普通用户隐藏。
-  // 重新公开 = 删除 beforeLoad 门控并恢复导航入口。
+  // 临时下线（2026-09-12）：贡献者计划页整改中，对所有用户（含管理员）重定向
+  // 回首页；页面代码与后端数据全部保留。重新上线 = 恢复原管理员门控并清空
+  // nav-modules.ts 的 TEMPORARILY_OFFLINE_MODULES。
   beforeLoad: () => {
-    const { auth } = useAuthStore.getState()
-
-    if (!auth.user || auth.user.role < ROLE.ADMIN) {
-      throw redirect({
-        to: '/',
-      })
-    }
+    throw redirect({
+      to: '/',
+    })
   },
   component: ContributorProgram,
 })

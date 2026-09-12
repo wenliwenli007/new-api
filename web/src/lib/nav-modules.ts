@@ -110,10 +110,24 @@ function parseHeaderNavRecord(raw: unknown): Record<string, unknown> | null {
   }
 }
 
+// 临时下线（2026-09-12）：模型市场 / 贡献者计划 / 服务状态三页整改中，
+// 强制从顶部导航隐藏，并让 /market、/health 路由的 beforeLoad 门控把直接
+// 访问重定向回首页。页面代码与后端数据全部保留；重新上线时清空此数组即可。
+const TEMPORARILY_OFFLINE_MODULES: Array<keyof HeaderNavModules> = [
+  'market',
+  'contributor',
+  'health',
+]
+
 export function parseHeaderNavModules(raw: unknown): HeaderNavModules {
   const result = cloneHeaderNavDefaults()
   const parsed = parseHeaderNavRecord(raw)
-  if (!parsed) return result
+  if (!parsed) {
+    TEMPORARILY_OFFLINE_MODULES.forEach((key) => {
+      result[key] = false
+    })
+    return result
+  }
 
   Object.entries(parsed).forEach(([key, value]) => {
     if (key === 'pricing') {
@@ -137,6 +151,10 @@ export function parseHeaderNavModules(raw: unknown): HeaderNavModules {
         typeof fallback === 'boolean' ? fallback : true
       )
     }
+  })
+
+  TEMPORARILY_OFFLINE_MODULES.forEach((key) => {
+    result[key] = false
   })
 
   return result

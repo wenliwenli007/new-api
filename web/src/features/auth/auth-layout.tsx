@@ -19,8 +19,9 @@ For commercial licensing, please contact support@quantumnous.com
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
-import { GlassSurface, PastelBackdrop } from '@/components/ui/v2-surfaces'
+import { BrandMark } from '@/components/layout/components/brand-mark'
 import { Skeleton } from '@/components/ui/skeleton'
+import { GlassSurface, PastelBackdrop } from '@/components/ui/v2-surfaces'
 import { useSystemConfig } from '@/hooks/use-system-config'
 
 type AuthLayoutProps = {
@@ -31,7 +32,7 @@ type AuthLayoutProps = {
  *  居中式节奏）——顶部品牌条 → 渐变大标题居中 → 卖点三卡横排 → 表单卡居中。 */
 export function AuthLayout({ children }: AuthLayoutProps) {
   const { t } = useTranslation()
-  const { systemName, logo, loading } = useSystemConfig()
+  const { systemName, logo, loading, logoLoaded } = useSystemConfig()
 
   const sellingPoints = [
     {
@@ -62,17 +63,14 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         to='/'
         className='absolute top-4 left-4 z-20 flex items-center gap-2 transition-opacity hover:opacity-80 sm:top-6 sm:left-8'
       >
-        <div className='relative h-8 w-8'>
-          {loading ? (
-            <Skeleton className='absolute inset-0 rounded-full' />
-          ) : (
-            <img
-              src={logo}
-              alt={t('Logo')}
-              className='h-8 w-8 rounded-full object-cover'
-            />
-          )}
-        </div>
+        <BrandMark
+          src={logo}
+          name={systemName}
+          alt={t('Logo')}
+          loading={loading}
+          logoLoaded={logoLoaded}
+          variant='auth'
+        />
         {loading ? (
           <Skeleton className='h-6 w-24' />
         ) : (

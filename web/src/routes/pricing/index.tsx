@@ -20,6 +20,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import z from 'zod'
 
 import { Pricing } from '@/features/pricing'
+import { bootstrapAuthentication } from '@/lib/auth-session'
 import { getFreshModuleAccess } from '@/lib/nav-modules'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -44,6 +45,11 @@ export const Route = createFileRoute('/pricing/')({
       throw redirect({ to: '/' })
     }
     if (access.requireAuth) {
+      try {
+        await bootstrapAuthentication()
+      } catch {
+        // Treat an unavailable refresh endpoint as an unauthenticated visit.
+      }
       const { auth } = useAuthStore.getState()
       if (!auth.user) {
         throw redirect({

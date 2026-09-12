@@ -32,7 +32,7 @@ export function Hero(props: HeroProps) {
   const { t } = useTranslation()
 
   return (
-    <section className='relative z-10 px-6 pt-14 pb-9 text-center md:pt-20'>
+    <section className='relative z-10 px-6 pt-4 pb-9 text-center md:pt-8'>
       <div
         aria-hidden
         className='pointer-events-none absolute inset-0 -z-10 opacity-25 dark:opacity-[0.12]'
@@ -52,7 +52,7 @@ export function Hero(props: HeroProps) {
 
       <h1 className='text-[clamp(1.9rem,4vw,2.4rem)] leading-[1.2] font-extrabold tracking-tight'>
         {t('home.hero.titleBefore')}
-        <span className='bg-gradient-to-br from-primary to-[#A855F7] bg-clip-text text-transparent'>
+        <span className='from-primary bg-gradient-to-br to-[#A855F7] bg-clip-text text-transparent'>
           {t('home.hero.titleGradient')}
         </span>
         {t('home.hero.titleAfter')}
@@ -62,15 +62,17 @@ export function Hero(props: HeroProps) {
       </p>
 
       <div className='mt-6 flex flex-wrap items-center justify-center gap-2'>
+        {/* 临时下线（2026-09-12）：模型市场页整改中，入口暂隐；重新上线时恢复本按钮。
         <Button
           className='h-10 rounded-full px-[18px] text-[13.5px] font-semibold'
           render={<Link to='/market' />}
         >
           {t('home.hero.ctaMarket')}
         </Button>
+        */}
         <Button
           variant='outline'
-          className='bg-card/85 h-10 rounded-full px-[18px] text-[13.5px] font-semibold hover:border-primary hover:text-primary'
+          className='bg-card/85 hover:border-primary hover:text-primary h-10 rounded-full px-[18px] text-[13.5px] font-semibold'
           render={
             <Link to={props.isAuthenticated ? '/dashboard' : '/sign-in'} />
           }

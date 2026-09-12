@@ -27,7 +27,9 @@ export { AuthenticatedLayout } from './components/authenticated-layout'
 export { PublicLayout } from './components/public-layout'
 export { PublicHeader } from './components/public-header'
 export { PublicNavigation } from './components/public-navigation'
+export { BrandMark } from './components/brand-mark'
 export { HeaderLogo } from './components/header-logo'
+export { PageContainer, PageShell } from './components/page-container'
 export { NavLinkItem, NavLinkList } from './components/nav-link-item'
 export { Header } from './components/header'
 export { Main } from './components/main'
@@ -64,4 +66,5 @@ export type {
   SidebarViewParent,
   TopNavLink,
 } from './types'
+export type { PageContainerWidth } from './components/page-container'
 export type { SectionPageLayoutProps } from './components/section-page-layout'

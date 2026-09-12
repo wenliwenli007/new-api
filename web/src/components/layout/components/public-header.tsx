@@ -35,7 +35,7 @@ import { useAuthStore } from '@/stores/auth-store'
 
 import { defaultTopNavLinks } from '../config/top-nav.config'
 import type { TopNavLink } from '../types'
-import { HeaderLogo } from './header-logo'
+import { BrandMark } from './brand-mark'
 
 const AUTH_PROMPT_SECONDS = 5
 
@@ -97,6 +97,22 @@ export function PublicHeader(props: PublicHeaderProps) {
   const isAuthenticated = !!user
   const displaySiteName = customSiteName || systemName
   const links = dynamicLinks.length > 0 ? dynamicLinks : navLinks
+  let desktopAuthControl: React.ReactNode
+  if (loading) {
+    desktopAuthControl = <Skeleton className='h-8 w-20 rounded-lg' />
+  } else if (isAuthenticated) {
+    desktopAuthControl = <ProfileDropdown />
+  } else {
+    desktopAuthControl = (
+      <Button
+        size='sm'
+        className='h-8 rounded-lg px-3.5 text-xs font-medium'
+        render={<Link to='/sign-in' />}
+      >
+        {t('Sign in')}
+      </Button>
+    )
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -196,16 +212,15 @@ export function PublicHeader(props: PublicHeaderProps) {
               className='group flex shrink-0 items-center gap-2.5'
             >
               <div className='flex size-7 shrink-0 items-center justify-center transition-all duration-300 group-hover:scale-105'>
-                {loading ? (
-                  <Skeleton className='size-full rounded-lg' />
-                ) : customLogo ? (
-                  customLogo
-                ) : (
-                  <HeaderLogo
+                {customLogo ?? (
+                  <BrandMark
                     src={systemLogo}
+                    name={displaySiteName}
+                    alt={t('Logo')}
                     loading={loading}
                     logoLoaded={logoLoaded}
-                    className='size-full rounded-lg object-contain'
+                    variant='header'
+                    className='size-full'
                   />
                 )}
               </div>
@@ -216,13 +231,13 @@ export function PublicHeader(props: PublicHeaderProps) {
 
             {/* Desktop nav: v2 浮动胶囊导航 */}
             <div className='hidden items-center gap-2 sm:flex'>
-              <div className='border-border/60 bg-card/85 shadow-xs flex items-center gap-0.5 rounded-full border p-1 backdrop-blur-md dark:bg-card/70'>
-                {links.map((link, i) => {
+              <div className='border-border/60 bg-card/85 dark:bg-card/70 flex items-center gap-0.5 rounded-full border p-1 shadow-xs backdrop-blur-md'>
+                {links.map((link) => {
                   const isActive = pathname === link.href
                   if (link.external) {
                     return (
                       <a
-                        key={i}
+                        key={`${link.href}:${link.title}`}
                         href={link.href}
                         target='_blank'
                         rel='noopener noreferrer'
@@ -243,7 +258,7 @@ export function PublicHeader(props: PublicHeaderProps) {
                   }
                   return (
                     <Link
-                      key={i}
+                      key={`${link.href}:${link.title}`}
                       to={link.href}
                       disabled={link.disabled}
                       onClick={(event) => handleNavLinkClick(event, link)}
@@ -285,19 +300,7 @@ export function PublicHeader(props: PublicHeaderProps) {
               {showAuthButtons && (
                 <>
                   <div className='bg-border/40 mx-1 h-4 w-px' />
-                  {loading ? (
-                    <Skeleton className='h-8 w-20 rounded-lg' />
-                  ) : isAuthenticated ? (
-                    <ProfileDropdown />
-                  ) : (
-                    <Button
-                      size='sm'
-                      className='h-8 rounded-lg px-3.5 text-xs font-medium'
-                      render={<Link to='/sign-in' />}
-                    >
-                      {t('Sign in')}
-                    </Button>
-                  )}
+                  {desktopAuthControl}
                 </>
               )}
             </div>
@@ -369,7 +372,7 @@ export function PublicHeader(props: PublicHeaderProps) {
               if (link.external) {
                 return (
                   <a
-                    key={i}
+                    key={`${link.href}:${link.title}`}
                     href={link.href}
                     target='_blank'
                     rel='noopener noreferrer'
@@ -385,7 +388,7 @@ export function PublicHeader(props: PublicHeaderProps) {
               }
               return (
                 <Link
-                  key={i}
+                  key={`${link.href}:${link.title}`}
                   to={link.href}
                   disabled={link.disabled}
                   onClick={(event) => handleNavLinkClick(event, link, true)}

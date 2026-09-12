@@ -19,16 +19,25 @@ For commercial licensing, please contact support@quantumnous.com
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 import { AuthenticatedLayout } from '@/components/layout'
+import { bootstrapAuthentication } from '@/lib/auth-session'
 import { useAuthStore } from '@/stores/auth-store'
 
 export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: ({ location }) => {
+  beforeLoad: async ({ location }) => {
+    try {
+      await bootstrapAuthentication()
+    } catch {
+      // Treat an unavailable refresh endpoint as an unauthenticated visit.
+      // The route guard below still permits a valid in-memory session.
+    }
+
     const { auth } = useAuthStore.getState()
 
     if (!auth.user || !auth.accessToken) {
+      const redirectTarget = `${location.pathname}${location.searchStr}${location.hash ? `#${location.hash}` : ''}`
       throw redirect({
         to: '/sign-in',
-        search: { redirect: location.href },
+        search: { redirect: redirectTarget },
       })
     }
   },

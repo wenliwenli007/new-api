@@ -62,9 +62,9 @@ export function Home() {
   if (!isLoaded) {
     return (
       <PublicLayout showMainContainer={false}>
-        <main className='flex min-h-screen items-center justify-center'>
+        <div className='flex min-h-[calc(100svh-5rem)] items-center justify-center'>
           <div className='text-muted-foreground'>{t('Loading...')}</div>
-        </main>
+        </div>
       </PublicLayout>
     )
   }
@@ -84,7 +84,7 @@ export function Home() {
           <iframe
             ref={iframeRef}
             src={content}
-            className='h-screen w-full border-none'
+            className='h-[calc(100svh-5rem)] w-full border-none'
             title={t('Custom Home Page')}
             sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts allow-top-navigation-by-user-activation'
             onLoad={syncIframePreferences}
@@ -110,8 +110,11 @@ export function Home() {
 
     return (
       <PublicLayout>
-        <div className='mx-auto max-w-6xl px-4 py-8'>
-          <GlassSurface variant='shell' className='custom-home-content p-6 sm:p-10'>
+        <div className='py-2'>
+          <GlassSurface
+            variant='shell'
+            className='custom-home-content p-6 sm:p-10'
+          >
             <RichContent
               mode='markdown'
               content={content}
@@ -131,7 +134,7 @@ export function Home() {
         → 今天的服务脉搏（6 指标）→ 热门官方模型 chips。
         CMS branches above are intentionally left untouched.
       */}
-      <div className='relative z-10 mx-auto max-w-6xl px-4 pt-8 md:pt-12'>
+      <div className='max-w-container relative z-10 mx-auto w-full px-4 pt-8 sm:px-6 md:pt-12 lg:px-8'>
         <Hero isAuthenticated={isAuthenticated} />
         <DualCards />
         <Pulse />

@@ -30,13 +30,43 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { GlassSurface } from '@/components/ui/v2-surfaces'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import { getApiKeys } from '@/features/keys/api'
+import { getUserLogs } from '@/features/usage-logs/api'
+import { LOG_TYPE_ENUM } from '@/features/usage-logs/constants'
+import type { UsageLog } from '@/features/usage-logs/data/schema'
+import { getUserModels } from '@/lib/api'
+import { formatNumber, formatQuota } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth-store'
 
-/** 控制台欢迎条 + 三统计卡 + 快速接入卡（对齐 prototype/llmcommons-ia/console.html）。
- *  数据：余额=auth.quota、本月消费=used_quota、令牌数=/api/token、base_url=当前站点。 */
+function buildJsSnippet(baseUrl: string, model: string): string {
+  return `import OpenAI from 'openai'
+
+const client = new OpenAI({
+  apiKey: 'sk-...',
+  baseURL: '${baseUrl}/v1',
+})
+
+const completion = await client.chat.completions.create({
+  model: '${model}',
+  messages: [{ role: 'user', content: 'Hello' }],
+})
+
+console.log(completion.choices[0].message.content)`
+}
+
+/** 控制台欢迎条 + 四统计卡 + 快速接入卡（对齐 prototype/llmcommons-ia/console.html）。
+ *  数据：余额=auth.quota、本月消费/调用=/api/data/self 当月聚合、令牌数=/api/token、
+ *  最近调用=/api/log/self 真实逐条计费日志、base_url=当前站点。 */
 export function ConsoleWelcome() {
   const { t } = useTranslation()
   const user = useAuthStore((s) => s.auth.user)
@@ -51,9 +81,9 @@ export function ConsoleWelcome() {
     staleTime: 60 * 1000,
   })
 
-  // 本月消费：/api/data/self 当月区间聚合（quota 字段=消费额）
-  const monthQuotaQuery = useQuery({
-    queryKey: ['console', 'month-quota'],
+  // 本月消费与调用次数：/api/data/self 当月区间聚合（quota=消费额，count=调用次数）
+  const monthStatsQuery = useQuery({
+    queryKey: ['console', 'month-stats'],
     queryFn: async () => {
       const now = new Date()
       const start = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -61,29 +91,38 @@ export function ConsoleWelcome() {
         start_timestamp: Math.floor(start.getTime() / 1000),
         end_timestamp: Math.floor(now.getTime() / 1000),
       })
-      const total = (r.data ?? []).reduce((s, d) => s + (d.quota ?? 0), 0)
-      return total
+      return (r.data ?? []).reduce(
+        (acc, d) => ({
+          quota: acc.quota + (d.quota ?? 0),
+          count: acc.count + (d.count ?? 0),
+        }),
+        { quota: 0, count: 0 }
+      )
     },
     staleTime: 60 * 1000,
   })
 
+  // 最近调用：真实逐条计费日志（/api/log/self，type=2 消费），一行=一次成功计费调用
   const recentCallsQuery = useQuery({
     queryKey: ['console', 'recent-calls'],
     queryFn: async () => {
-      const end = new Date()
-      const start = new Date(end)
-      start.setDate(start.getDate() - 7)
-      const r = await getUserQuotaDates({
-        start_timestamp: Math.floor(start.getTime() / 1000),
-        end_timestamp: Math.floor(end.getTime() / 1000),
-        default_time: 'hour',
+      const r = await getUserLogs({
+        p: 1,
+        page_size: 5,
+        type: LOG_TYPE_ENUM.CONSUME,
       })
-      return (r.data ?? [])
-        .filter((item) => item.model_name || item.count || item.quota)
-        .sort((a, b) => Number(b.created_at) - Number(a.created_at))
-        .slice(0, 5)
+      return r.success && r.data ? (r.data.items as UsageLog[]).slice(0, 5) : []
     },
     staleTime: 60 * 1000,
+  })
+
+  const modelsQuery = useQuery({
+    queryKey: ['console', 'quick-connect-model'],
+    queryFn: async () => {
+      const r = await getUserModels()
+      return r.success ? (r.data ?? []) : []
+    },
+    staleTime: 5 * 60 * 1000,
   })
 
   const recentCalls = useMemo(
@@ -93,12 +132,19 @@ export function ConsoleWelcome() {
 
   const quota = Number(user?.quota ?? 0)
   const usedQuota = Number(user?.used_quota ?? 0)
-  const monthUsed = monthQuotaQuery.data ?? usedQuota
+  const monthStats = monthStatsQuery.data
+  const monthUsed = monthStats?.quota ?? usedQuota
+  const monthCalls = monthStats?.count ?? 0
   const tokenCount = keysQuery.data ?? 0
   const baseUrl =
     typeof window !== 'undefined'
       ? window.location.origin
       : 'https://llmcommons.com'
+  const sampleModel = modelsQuery.data?.[0] ?? 'gpt-4o-mini'
+  const jsSnippet = useMemo(
+    () => buildJsSnippet(baseUrl, sampleModel),
+    [baseUrl, sampleModel]
+  )
 
   return (
     <div className='flex flex-col gap-4'>
@@ -119,14 +165,14 @@ export function ConsoleWelcome() {
         </span>
       </div>
 
-      {/* 三统计卡 */}
-      <div className='grid gap-4 sm:grid-cols-3'>
+      {/* 四统计卡 */}
+      <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
         <div className='bg-card border-border rounded-2xl border p-5'>
           <div className='text-muted-foreground text-xs font-medium'>
             {t('当前余额')}
           </div>
           <div className='mt-2 text-2xl font-extrabold tabular-nums'>
-            ¥{(quota / 500000).toFixed(2)}
+            {formatQuota(quota)}
           </div>
           <Link to='/wallet' className='mt-3 inline-block'>
             <Button size='sm' className='h-8 rounded-full px-3 text-xs'>
@@ -140,7 +186,18 @@ export function ConsoleWelcome() {
             {t('本月消费')}
           </div>
           <div className='mt-2 text-2xl font-extrabold tabular-nums'>
-            ¥{(monthUsed / 500000).toFixed(2)}
+            {formatQuota(monthUsed)}
+          </div>
+          <div className='text-muted-foreground mt-2 text-xs'>
+            {t('本月调用统计')}
+          </div>
+        </div>
+        <div className='bg-card border-border rounded-2xl border p-5'>
+          <div className='text-muted-foreground text-xs font-medium'>
+            {t('本月调用次数')}
+          </div>
+          <div className='mt-2 text-2xl font-extrabold tabular-nums'>
+            {formatNumber(monthCalls)}
           </div>
           <div className='text-muted-foreground mt-2 text-xs'>
             {t('本月调用统计')}
@@ -151,7 +208,7 @@ export function ConsoleWelcome() {
             {t('可用令牌')}
           </div>
           <div className='mt-2 text-2xl font-extrabold tabular-nums'>
-            {tokenCount}
+            {formatNumber(tokenCount)}
           </div>
           <Link to='/keys' className='mt-3 inline-block'>
             <Button
@@ -175,7 +232,7 @@ export function ConsoleWelcome() {
               {t('最近调用')}
             </h3>
             <p className='text-muted-foreground mt-1 text-xs'>
-              {t('最近 7 天的真实调用聚合数据')}
+              {t('最近 7 天的真实调用数据')}
             </p>
           </div>
           <Link
@@ -186,93 +243,77 @@ export function ConsoleWelcome() {
             <ArrowRight className='size-3.5' />
           </Link>
         </div>
-        <div className='overflow-x-auto'>
-          <table className='w-full min-w-[560px] text-sm'>
-            <thead className='bg-muted/35 text-muted-foreground text-left text-xs'>
-              <tr>
-                <th className='px-5 py-3 font-medium'>{t('时间')}</th>
-                <th className='px-5 py-3 font-medium'>{t('模型')}</th>
-                <th className='px-5 py-3 text-right font-medium'>Tokens</th>
-                <th className='px-5 py-3 text-right font-medium'>
-                  {t('调用')}
-                </th>
-                <th className='px-5 py-3 text-right font-medium'>
-                  {t('费用')}
-                </th>
-                <th className='px-5 py-3 text-right font-medium'>
-                  {t('状态')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className='divide-y'>
-              {recentCalls.map((call) => {
-                const timestamp = Number(call.created_at) * 1000
-                const time = Number.isFinite(timestamp)
-                  ? new Intl.DateTimeFormat(undefined, {
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    }).format(new Date(timestamp))
-                  : '—'
-                const rowKey =
-                  call.id ??
-                  [
-                    call.created_at,
-                    call.model_name ?? 'aggregate',
-                    call.token_used ?? 0,
-                    call.count ?? 0,
-                    call.quota ?? 0,
-                  ].join('-')
-                return (
-                  <tr key={rowKey}>
-                    <td className='text-muted-foreground px-5 py-3 whitespace-nowrap'>
-                      <span className='inline-flex items-center gap-1.5'>
-                        <Clock3 className='size-3.5' />
-                        {time}
-                      </span>
-                    </td>
-                    <td className='px-5 py-3 font-mono text-xs font-medium'>
-                      {call.model_name || t('多个模型')}
-                    </td>
-                    <td className='px-5 py-3 text-right font-mono text-xs tabular-nums'>
-                      {Number(call.token_used ?? 0).toLocaleString()}
-                    </td>
-                    <td className='px-5 py-3 text-right tabular-nums'>
-                      {Number(call.count ?? 0).toLocaleString()}
-                    </td>
-                    <td className='px-5 py-3 text-right font-mono text-xs tabular-nums'>
-                      ¥{(Number(call.quota ?? 0) / 500000).toFixed(2)}
-                    </td>
-                    <td className='px-5 py-3 text-right'>
-                      <span className='text-success inline-flex items-center gap-1 text-xs font-semibold'>
-                        <CheckCircle2 className='size-3.5' />
-                        {t('成功')}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-              {recentCalls.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className='text-muted-foreground px-5 py-8 text-center text-sm'
-                  >
-                    {recentCallsQuery.isLoading
-                      ? t('加载中…')
-                      : t('暂无调用记录')}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('时间')}</TableHead>
+              <TableHead>{t('模型')}</TableHead>
+              <TableHead className='text-right'>Tokens</TableHead>
+              <TableHead className='text-right'>{t('调用')}</TableHead>
+              <TableHead className='text-right'>{t('费用')}</TableHead>
+              <TableHead className='text-right'>{t('状态')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {recentCalls.map((call) => {
+              const timestamp = Number(call.created_at) * 1000
+              const time = Number.isFinite(timestamp)
+                ? new Intl.DateTimeFormat(undefined, {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }).format(new Date(timestamp))
+                : '—'
+              const tokens =
+                Number(call.prompt_tokens ?? 0) +
+                Number(call.completion_tokens ?? 0)
+              return (
+                <TableRow key={call.id}>
+                  <TableCell className='text-muted-foreground whitespace-nowrap'>
+                    <span className='inline-flex items-center gap-1.5'>
+                      <Clock3 className='size-3.5' />
+                      {time}
+                    </span>
+                  </TableCell>
+                  <TableCell className='font-mono text-xs font-medium'>
+                    {call.model_name || '—'}
+                  </TableCell>
+                  <TableCell className='text-right font-mono text-xs tabular-nums'>
+                    {tokens.toLocaleString()}
+                  </TableCell>
+                  <TableCell className='text-right tabular-nums'>1</TableCell>
+                  <TableCell className='text-right font-mono text-xs tabular-nums'>
+                    {formatQuota(Number(call.quota ?? 0))}
+                  </TableCell>
+                  <TableCell className='text-right'>
+                    <span className='text-success inline-flex items-center gap-1 text-xs font-semibold'>
+                      <CheckCircle2 className='size-3.5' />
+                      {t('成功')}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+            {recentCalls.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className='text-muted-foreground py-8 text-center'
+                >
+                  {recentCallsQuery.isLoading
+                    ? t('加载中…')
+                    : t('暂无调用记录')}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* 快速接入卡 */}
       <GlassSurface variant='shell' className='p-5'>
-        <div className='flex flex-wrap items-center justify-between gap-4'>
+        <div className='grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-center'>
           <div>
             <h3 className='text-base font-bold'>{t('快速接入')}</h3>
             <p className='text-muted-foreground mt-1.5 text-sm'>
@@ -282,13 +323,16 @@ export function ConsoleWelcome() {
               </code>
               （不带 /v1），端点自动拼接 /v1/chat/completions。
             </p>
+            <pre className='bg-muted/60 text-muted-foreground mt-3 overflow-x-auto rounded-xl border p-3 font-mono text-xs leading-relaxed'>
+              {jsSnippet}
+            </pre>
           </div>
-          <Link to='/keys'>
-            <Button className='rounded-full'>
+          <div className='flex justify-start lg:justify-end'>
+            <Button className='rounded-full' render={<Link to='/keys' />}>
               {t('创建 API 令牌')}
               <ArrowRight className='size-4' data-icon='inline-end' />
             </Button>
-          </Link>
+          </div>
         </div>
       </GlassSurface>
     </div>

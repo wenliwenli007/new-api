@@ -24,7 +24,11 @@ import { PageTransition } from '@/components/page-transition'
 import { Button } from '@/components/ui/button'
 import { ReferenceSystemCard } from '@/components/ui/v2-reference'
 import { GlassSurface } from '@/components/ui/v2-surfaces'
-import { FilterChip, CurrencyDisplayToggle, useDisplayCurrency } from '@/components/ui/v2-widgets'
+import {
+  FilterChip,
+  CurrencyDisplayToggle,
+  useDisplayCurrency,
+} from '@/components/ui/v2-widgets'
 import { useOfficialPricing } from '@/features/channels/hooks/use-official-pricing'
 
 import {
@@ -196,16 +200,14 @@ export function Pricing() {
 
   if (isLoading) {
     return (
-      <PublicLayout showMainContainer={false}>
-        <div className='mx-auto w-full max-w-[1800px] px-3 pt-16 pb-8 sm:px-6 sm:pt-20 sm:pb-10 xl:px-8'>
-          <LoadingSkeleton viewMode={viewMode} />
-        </div>
+      <PublicLayout contentWidth='wide'>
+        <LoadingSkeleton viewMode={viewMode} />
       </PublicLayout>
     )
   }
 
   return (
-    <PublicLayout showMainContainer={false}>
+    <PublicLayout contentWidth='wide'>
       <div className='relative'>
         <div
           aria-hidden
@@ -222,7 +224,7 @@ export function Pricing() {
               'linear-gradient(to bottom, black 40%, transparent 100%)',
           }}
         />
-        <PageTransition className='relative mx-auto w-full max-w-[1800px] px-3 pt-16 pb-8 sm:px-6 sm:pt-20 sm:pb-10 xl:px-8'>
+        <PageTransition className='relative w-full pb-2 sm:pb-4'>
           <header className='mx-auto mb-5 max-w-3xl pt-5 text-center sm:mb-10 sm:pt-10'>
             <h1 className='text-[clamp(2rem,5.5vw,3.5rem)] leading-[1.15] font-bold tracking-tight'>
               {t('Model Square')}
@@ -277,22 +279,22 @@ export function Pricing() {
             <div className='mt-5 inline-flex items-center gap-2'>
               <CurrencyDisplayToggle />
               <div className='bg-muted/40 inline-flex rounded-full border p-1'>
-              <Button
-                size='sm'
-                variant={pricingView === 'market' ? 'default' : 'ghost'}
-                className='h-8 rounded-full px-4 text-xs'
-                onClick={() => setPricingView('market')}
-              >
-                {t('模型广场')}
-              </Button>
-              <Button
-                size='sm'
-                variant={pricingView === 'transparent' ? 'default' : 'ghost'}
-                className='h-8 rounded-full px-4 text-xs'
-                onClick={() => setPricingView('transparent')}
-              >
-                {t('定价透明')}
-              </Button>
+                <Button
+                  size='sm'
+                  variant={pricingView === 'market' ? 'default' : 'ghost'}
+                  className='h-8 rounded-full px-4 text-xs'
+                  onClick={() => setPricingView('market')}
+                >
+                  {t('模型广场')}
+                </Button>
+                <Button
+                  size='sm'
+                  variant={pricingView === 'transparent' ? 'default' : 'ghost'}
+                  className='h-8 rounded-full px-4 text-xs'
+                  onClick={() => setPricingView('transparent')}
+                >
+                  {t('定价透明')}
+                </Button>
               </div>
             </div>
           </header>
@@ -319,7 +321,7 @@ export function Pricing() {
               className='hover-scrollbar sticky top-4 hidden max-h-[calc(100dvh-2rem)] self-start overflow-y-auto xl:block'
             />
 
-            <main className='min-w-0 space-y-4'>
+            <section className='min-w-0 space-y-4'>
               <GlassSurface variant='shell' className='space-y-4 p-4 sm:p-5'>
                 <PricingToolbar
                   filteredCount={filteredModels.length}
@@ -372,7 +374,7 @@ export function Pricing() {
                   icon='$'
                 />
               </div>
-            </main>
+            </section>
           </div>
 
           {selectedModel && (
