@@ -61,7 +61,9 @@ export function PageShell({
     <main
       className={cn(
         'w-full pb-6 sm:pb-8',
-        withHeaderOffset ? 'pt-20' : 'pt-6 sm:pt-8',
+        // 头部已改为 sticky 独立占位（不再 fixed 悬浮），主内容无需再做高度补偿；
+        // withHeaderOffset 只控制内容自身的顶部节奏。
+        withHeaderOffset ? 'pt-4' : 'pt-6 sm:pt-8',
         className
       )}
       {...props}

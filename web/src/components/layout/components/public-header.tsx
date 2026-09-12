@@ -191,7 +191,9 @@ export function PublicHeader(props: PublicHeaderProps) {
 
   return (
     <>
-      <header className='pointer-events-none fixed inset-x-0 top-0 z-50'>
+      {/* 独立布局空间：sticky 常驻文档流（不再悬浮遮盖内容），下滑时钉在顶部，
+          下方内容在自身布局内滚动，从导航下方穿过。 */}
+      <header className='pointer-events-none sticky top-0 z-50'>
         <div
           className={cn(
             'pointer-events-auto mx-auto transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]',
