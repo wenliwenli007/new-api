@@ -318,7 +318,9 @@ export function Pricing() {
               models={models || []}
               hasActiveFilters={hasActiveFilters}
               onClearFilters={clearFilters}
-              className='hover-scrollbar sticky top-4 hidden max-h-[calc(100dvh-2rem)] self-start overflow-y-auto xl:block'
+              {/* 钉住点必须让开 sticky 头部胶囊的高度（pt-3 + h-12 = 60px），
+                  否则下滑后筛选栏顶部被头部永久遮挡。 */}
+              className='hover-scrollbar sticky top-[4.75rem] hidden max-h-[calc(100dvh-5.75rem)] self-start overflow-y-auto xl:block'
             />
 
             <section className='min-w-0 space-y-4'>

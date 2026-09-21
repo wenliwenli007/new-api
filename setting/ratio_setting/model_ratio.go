@@ -387,7 +387,7 @@ func GetModelRatio(name string) (float64, bool, string) {
 
 	ratio, ok := modelRatioMap.Get(name)
 	if !ok {
-		return 37.5, operation_setting.SelfUseModeEnabled, name
+		return 1, operation_setting.SelfUseModeEnabled, name
 	}
 	return ratio, true, name
 }
@@ -728,5 +728,5 @@ func GetModelRatioOrPrice(model string) (float64, bool, bool) { // price or rati
 	if success {
 		return modelRatio, false, true
 	}
-	return 37.5, false, false
+	return 1, false, false
 }
