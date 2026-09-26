@@ -60,6 +60,26 @@ export function TransparentPricingTable({
   const displayCurrency = getDisplayCurrency()
   const displayExchangeRate = getDisplayExchangeRate()
 
+  // 无官方基准价时的参照系标注：有 vendor=官方渠道待补录，无 vendor=本站自有渠道。
+  const regionLabel = (
+    official: OfficialPricingEntry | undefined,
+    hasVendor: boolean
+  ) => {
+    if (official) {
+      return official.region === 'domestic' ? '¥ / 1M' : '$ / 1M'
+    }
+    return hasVendor ? t('官网价待补录') : t('本站自有渠道')
+  }
+
+  // 无官方价时的来源列标注：有 vendor=暂无来源（待补录），无 vendor=无公开官网价。
+  const sourceLabel = (
+    official: OfficialPricingEntry | undefined,
+    hasVendor: boolean
+  ) => {
+    if (official?.source_url) return null // 有来源时渲染链接，不走此分支
+    return hasVendor ? t('暂无来源') : t('无公开官网价')
+  }
+
   return (
     <div className='space-y-3'>
       <div className='border-primary/20 bg-primary/5 rounded-xl border px-4 py-3 text-sm'>
@@ -133,15 +153,15 @@ export function TransparentPricingTable({
                     </div>
                   </td>
                   <td className='px-4 py-3 whitespace-nowrap'>
-                    {official ? (
-                      <span className='text-xs font-medium'>
-                        {official.region === 'domestic' ? '¥ / 1M' : '$ / 1M'}
-                      </span>
-                    ) : (
-                      <span className='text-muted-foreground text-xs'>
-                        {t('待核实')}
-                      </span>
-                    )}
+                    <span
+                      className={
+                        official
+                          ? 'text-xs font-medium'
+                          : 'text-muted-foreground text-xs'
+                      }
+                    >
+                      {regionLabel(official, Boolean(model.vendor_name))}
+                    </span>
                   </td>
                   <td className='px-4 py-3 text-right font-mono text-xs tabular-nums'>
                     {formatOfficialPrice(official, 'input', displayCurrency, displayExchangeRate)}
@@ -177,7 +197,7 @@ export function TransparentPricingTable({
                       </a>
                     ) : (
                       <span className='text-muted-foreground text-xs'>
-                        {t('暂无来源')}
+                        {sourceLabel(official, Boolean(model.vendor_name))}
                       </span>
                     )}
                   </td>

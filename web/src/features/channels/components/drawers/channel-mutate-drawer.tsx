@@ -198,6 +198,7 @@ import { useOfficialPricing, computeConflictedModels } from '../../hooks/use-off
 import {
   applyChannelPricing,
   buildWritebackPlan,
+  deriveChannelPricing,
   parseRatioRecord,
 } from '../../hooks/channel-pricing-writeback'
 import { getSystemOptions } from '@/features/system-settings/api'
@@ -1338,6 +1339,78 @@ export function ChannelMutateDrawer({
       initialStatusCodeMappingRef.current = ''
     }
   }, [isEditing, channelData, form])
+
+  // ── 初始化各渠道模型价格：编辑时从全局倍率表反算当前生效定价 ──
+  // 仅初始化一次（以 channel id 为键），新建渠道不跑；拉取失败保持空白不误填。
+  const pricingInitRef = useRef<number | string | null>(null)
+  useEffect(() => {
+    if (!isEditing || !channelData?.data) return
+    const channelId = channelData.data.id ?? 'new'
+    if (pricingInitRef.current === channelId) return
+    pricingInitRef.current = channelId
+
+    const models = parseModelsString(channelData.data.models || '')
+    if (models.length === 0) return
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await getSystemOptions()
+        if (cancelled) return
+        const optionsIndex: Record<string, string> = {}
+        for (const option of res?.data ?? []) {
+          if (option?.key) optionsIndex[option.key] = option.value
+        }
+        const tables = {
+          modelRatio: parseRatioRecord(optionsIndex.ModelRatio),
+          completionRatio: parseRatioRecord(optionsIndex.CompletionRatio),
+          cacheRatio: parseRatioRecord(optionsIndex.CacheRatio),
+          createCacheRatio: parseRatioRecord(optionsIndex.CreateCacheRatio),
+          modelPrice: parseRatioRecord(optionsIndex.ModelPrice),
+        }
+        const rate =
+          useSystemConfigStore.getState().config.currency.usdExchangeRate
+        const next: Record<string, ChannelModelPricing> = {}
+        const nextModes: Record<string, PricingMode> = {}
+        for (const model of models) {
+          // 官方 input 转 CNY 口径：domestic 是 ¥ 直接用，其余（international/空）是 $ ×汇率。
+          const official = officialPricing[model.toLowerCase()]
+          let officialCny: number | undefined
+          if (official) {
+            const isDomestic =
+              official.region?.trim().toLowerCase() === 'domestic'
+            const safeRate =
+              Number.isFinite(rate) && rate > 0 ? rate : 1
+            officialCny = isDomestic ? official.input : official.input * safeRate
+          }
+          const derived = deriveChannelPricing(
+            model,
+            tables,
+            rate,
+            officialCny
+          )
+          if (derived) {
+            next[model] = derived
+            nextModes[model] =
+              tables.modelPrice[model] != null && tables.modelPrice[model] > 0
+                ? 'perCall'
+                : 'token'
+          }
+        }
+        if (!cancelled && Object.keys(next).length > 0) {
+          setChannelPricing((prev) => ({ ...next, ...prev }))
+          setChannelPricingModes((prev) => ({ ...nextModes, ...prev }))
+        }
+      } catch {
+        // 拉取失败保持空白，不阻塞编辑
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+    // officialPricing 进依赖以便快照晚到时能补算（ref 已防重跑）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing, channelData])
 
   // Handle type change - set default values for specific types
   useEffect(() => {

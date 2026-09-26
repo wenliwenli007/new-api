@@ -82,6 +82,89 @@ function safeRate(rate: number | undefined): number {
   return Number.isFinite(rate) && (rate ?? 0) > 0 ? (rate as number) : 1
 }
 
+/** USD/1M → CNY/1M（展示口径；region=domestic 的官方价本就是 ¥，不乘汇率）。 */
+function usdToCnyPerMillion(
+  usd: number | null | undefined,
+  exchangeRate: number
+): number | null {
+  if (usd == null || !Number.isFinite(usd) || usd <= 0) return null
+  const rate = safeRate(exchangeRate)
+  return Number((usd * rate).toFixed(6))
+}
+
+/**
+ * 由全局倍率表反算渠道级定价（打开渠道编辑抽屉时初始化用）。
+ *
+ * new-api 语义（与 price.ts:72 `input = model_ratio×2` 一致）：
+ *   ModelRatio      = inputUsd / 2
+ *   CompletionRatio = outputUsd / inputUsd
+ *   CacheRatio      = cachedInputUsd / inputUsd
+ *   CreateCacheRatio= cacheWriteUsd / inputUsd
+ * 反算回 USD/1M 四价后转 CNY 展示口径。
+ *
+ * ratio（相对官网的倍率）由调用方比对官方价得出，这里返回 null 让 UI 显示；
+ * mode：能算出有效 input 即 'linked'，否则 'manual'（含按次计费 modelPrice 场景）。
+ */
+export function deriveChannelPricing(
+  model: string,
+  tables: {
+    modelRatio: Record<string, number>
+    completionRatio: Record<string, number>
+    cacheRatio: Record<string, number>
+    createCacheRatio: Record<string, number>
+    modelPrice: Record<string, number>
+  },
+  exchangeRate: number | undefined,
+  officialInputCny?: number
+): ChannelModelPricing | null {
+  const rate = safeRate(exchangeRate)
+
+  // 按次计费：modelPrice 是 USD/次，直接作 input 展示并标 manual。
+  const perCallUsd = tables.modelPrice[model]
+  if (perCallUsd != null && perCallUsd > 0) {
+    return {
+      ratio: null,
+      mode: 'manual',
+      input: usdToCnyPerMillion(perCallUsd, rate),
+      cachedInput: null,
+      cacheWrite: null,
+      output: null,
+    }
+  }
+
+  const mr = tables.modelRatio[model]
+  if (mr == null || !(mr > 0)) return null
+
+  const inputUsd = mr * 2
+  const cr = tables.completionRatio[model]
+  const cache = tables.cacheRatio[model]
+  const createCache = tables.createCacheRatio[model]
+  const inputCny = usdToCnyPerMillion(inputUsd, rate)
+
+  // 相对官网的倍率 = 本站 CNY input / 官方 CNY input（同口径比较）。
+  // 官方价经调用方转 CNY 传入；无官方价时 ratio=null（manual 语义），不编造。
+  const ratio =
+    officialInputCny != null && officialInputCny > 0 && inputCny != null
+      ? Number((inputCny / officialInputCny).toFixed(4))
+      : null
+
+  return {
+    ratio,
+    mode: ratio != null ? 'linked' : 'manual',
+    input: inputCny,
+    cachedInput:
+      cache != null && cache > 0
+        ? usdToCnyPerMillion(inputUsd * cache, rate)
+        : null,
+    cacheWrite:
+      createCache != null && createCache > 0
+        ? usdToCnyPerMillion(inputUsd * createCache, rate)
+        : null,
+    output:
+      cr != null && cr > 0 ? usdToCnyPerMillion(inputUsd * cr, rate) : null,
+  }
+}
+
 /** 把渠道级定价集合换算为全局倍率表写回计划；无效输入模型被跳过。 */
 export function buildWritebackPlan(
   pricing: Record<string, ChannelModelPricing>,
@@ -142,7 +225,7 @@ export async function applyChannelPricing(
     base: Record<string, number> | undefined
   ) => {
     if (Object.keys(next).length === 0) return
-    const merged = { ...(base ?? {}) }
+    const merged: Record<string, number> = base ? { ...base } : {}
     let changed = false
     for (const [model, ratio] of Object.entries(next)) {
       if (merged[model] !== ratio) {
